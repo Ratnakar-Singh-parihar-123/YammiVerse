@@ -1,0 +1,129 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* -------------------------------
+   🎨 CSS Variables
+--------------------------------- */
+@layer base {
+  :root {
+    --color-background: #FEFCF8;
+    --color-foreground: #2D1810;
+    --color-border: #E8E2D8;
+    --color-input: #F8F6F0;
+    --color-ring: #8B4513;
+
+    --color-card: #F8F6F0;
+    --color-card-foreground: #2D1810;
+
+    --color-popover: #FEFCF8;
+    --color-popover-foreground: #2D1810;
+
+    --color-muted: #F0EDE6;
+    --color-muted-foreground: #6B5B4F;
+
+    --color-primary: #8B4513;
+    --color-primary-foreground: #FEFCF8;
+
+    --color-secondary: #D2B48C;
+    --color-secondary-foreground: #2D1810;
+
+    --color-destructive: #C44536;
+    --color-destructive-foreground: #FEFCF8;
+
+    --color-accent: #FF6B35;
+    --color-accent-foreground: #FEFCF8;
+
+    --color-success: #4A7C59;
+    --color-success-foreground: #FEFCF8;
+
+    --color-warning: #E4A853;
+    --color-warning-foreground: #2D1810;
+
+    --color-error: #C44536;
+    --color-error-foreground: #FEFCF8;
+  }
+
+  .dark {
+    --color-background: #1A1612;
+    --color-foreground: #F5F1E8;
+    --color-border: #2D2520;
+    --color-input: #221F1A;
+    --color-ring: #D2B48C;
+
+    --color-card: #1F1C17;
+    --color-card-foreground: #F5F1E8;
+
+    --color-popover: #1A1612;
+    --color-popover-foreground: #F5F1E8;
+
+    --color-muted: #2A251F;
+    --color-muted-foreground: #A89580;
+
+    --color-primary: #D2B48C;
+    --color-primary-foreground: #1A1612;
+
+    --color-secondary: #3D342A;
+    --color-secondary-foreground: #F5F1E8;
+
+    --color-destructive: #DC5545;
+    --color-destructive-foreground: #F5F1E8;
+
+    --color-accent: #FF7A47;
+    --color-accent-foreground: #1A1612;
+
+    --color-success: #5A8A6B;
+    --color-success-foreground: #F5F1E8;
+
+    --color-warning: #F0B965;
+    --color-warning-foreground: #1A1612;
+
+    --color-error: #DC5545;
+    --color-error-foreground: #F5F1E8;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+  }
+
+  body, p, span, div, button, input, textarea, select {
+    font-family: 'Inter', sans-serif;
+  }
+
+  .font-caption {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* -------------------------------
+   🛠 Extra Utilities
+--------------------------------- */
+@layer utilities {
+  .shadow-warm { box-shadow: 0 2px 8px rgba(139, 69, 19, 0.08); }
+  .shadow-warm-md { box-shadow: 0 4px 12px rgba(139, 69, 19, 0.12); }
+  .shadow-warm-lg { box-shadow: 0 8px 24px rgba(139, 69, 19, 0.16); }
+
+  .dark .shadow-warm { box-shadow: 0 2px 8px rgba(210, 180, 140, 0.15); }
+  .dark .shadow-warm-md { box-shadow: 0 4px 12px rgba(210, 180, 140, 0.20); }
+  .dark .shadow-warm-lg { box-shadow: 0 8px 24px rgba(210, 180, 140, 0.25); }
+
+  .transition-micro { transition: all 200ms ease-out; }
+  .transition-state { transition: all 300ms ease-in-out; }
+  .transition-loading { transition: all 150ms linear; }
+  .transition-theme { transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
+}
