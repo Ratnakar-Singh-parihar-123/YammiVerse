@@ -30,14 +30,14 @@ const RecipeDetailsPage = () => {
 
         // Get recipe
         const res = await axios.get(
-          `http://localhost:5000/api/recipes/${recipeId}`,
+          `https://yammiverse.onrender.com/api/recipes/${recipeId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         let recipeData = res.data.recipe || res.data;
 
         // Fix image URL
         if (recipeData?.image && !recipeData.image.startsWith("http")) {
-          recipeData.image = `http://localhost:5000/${recipeData.image.replace(
+          recipeData.image = `https://yammiverse.onrender.com/${recipeData.image.replace(
             /\\/g,
             "/"
           )}`;
@@ -45,13 +45,13 @@ const RecipeDetailsPage = () => {
         setRecipe(recipeData);
 
         // Get current user
-        const userRes = await axios.get("http://localhost:5000/api/users/me", {
+        const userRes = await axios.get("https://yammiverse.onrender.com/api/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCurrentUser(userRes.data.user);
 
         // Get favorites
-        const favRes = await axios.get("http://localhost:5000/api/favorites", {
+        const favRes = await axios.get("https://yammiverse.onrender.com/api/favorites", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const favorites = favRes.data.favorites || [];
@@ -71,13 +71,13 @@ const RecipeDetailsPage = () => {
   const handleToggleFavorite = async () => {
     try {
       if (isFavorite) {
-        await axios.delete(`http://localhost:5000/api/favorites/${recipeId}`, {
+        await axios.delete(`https://yammiverse.onrender.com/api/favorites/${recipeId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setIsFavorite(false);
       } else {
         await axios.post(
-          `http://localhost:5000/api/favorites/${recipeId}`,
+          `https://yammiverse.onrender.com/api/favorites/${recipeId}`,
           {},
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -98,7 +98,7 @@ const RecipeDetailsPage = () => {
 
   const handleConfirmDelete = async () => {
     try {
-      await axios.delete(`http://localhost:5000/api/recipes/${recipeId}`, {
+      await axios.delete(`https://yammiverse.onrender.com/api/recipes/${recipeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log(` Recipe ${recipe?.title} deleted`);

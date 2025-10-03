@@ -12,7 +12,7 @@ const RecipeImageUpload = ({ currentImage, onImageChange, error }) => {
     if (typeof currentImage === "string") {
       setPreviewImage(currentImage.startsWith("http") 
         ? currentImage 
-        : `http://localhost:5000/${currentImage.replace(/\\/g, "/")}`);
+        : `https://yammiverse.onrender.com/${currentImage.replace(/\\/g, "/")}`);
     }
   }, [currentImage]);
 

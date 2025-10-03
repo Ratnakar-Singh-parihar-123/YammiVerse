@@ -13,11 +13,18 @@ connectDb();
 
 // ✅ Middlewares
 app.use(express.json());
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // Postman
-      if (origin.startsWith("http://localhost")) return callback(null, true);
+      if (!origin) return callback(null, true); // Postman, curl
+      if (
+        origin === "http://localhost:3000" ||
+        origin === "http://localhost:5173" ||
+        origin === "https://yammiverse.onrender.com"
+      ) {
+        return callback(null, true);
+      }
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
@@ -34,9 +41,9 @@ app.use("/api/recipes", require("./routes/recipe"));
 app.use("/api/favorites", require("./routes/favorite"));
 
 // -------------------------
-// ✅ React frontend serve (Express 5 safe way)
+// ✅ React frontend serve
 // -------------------------
-const frontendPath = path.join(__dirname, "../client/build"); // 👈 fixed path
+const frontendPath = path.join(__dirname, "../client/build"); // 👈 Vite build (dist) | CRA ho to build likho
 
 app.use(express.static(frontendPath));
 

@@ -26,7 +26,7 @@ const ProfilePage = () => {
   //  Fetch Profile (with stats)
   const fetchUserProfile = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/users/profile", {
+      const res = await axios.get("https://yammiverse.onrender.com/api/users/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUser(res.data.user);
@@ -55,7 +55,7 @@ const ProfilePage = () => {
       formData.append("avatar", file);
 
       const res = await axios.put(
-        "http://localhost:5000/api/users/me/avatar",
+        "https://yammiverse.onrender.com/api/users/me/avatar",
         formData,
         {
           headers: {
@@ -76,7 +76,7 @@ const ProfilePage = () => {
   //  Profile Update
   const handleProfileSave = async (formData) => {
     try {
-      await axios.put("http://localhost:5000/api/users/profile", formData, {
+      await axios.put("https://yammiverse.onrender.com/api/users/profile", formData, {
         headers: { Authorization: `Bearer ${token}` },
       });
       await fetchUserProfile();

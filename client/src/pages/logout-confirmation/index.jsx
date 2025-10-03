@@ -32,7 +32,7 @@ const LogoutConfirmation = () => {
     const fetchUser = async () => {
       try {
         if (!token) return;
-        const res = await axios.get("http://localhost:5000/api/users/me", {
+        const res = await axios.get("https://yammiverse.onrender.com/api/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCurrentUser(res.data.user);
@@ -55,7 +55,7 @@ const LogoutConfirmation = () => {
     setLogoutLoading(true);
     try {
       await axios.post(
-        "http://localhost:5000/api/users/logout",
+        "https://yammiverse.onrender.com/api/users/logout",
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -79,7 +79,7 @@ const LogoutConfirmation = () => {
 
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", {
+      const res = await axios.post("https://yammiverse.onrender.com/api/auth/login", {
         email: quickLoginData.email,
         password: quickLoginData.password,
       });

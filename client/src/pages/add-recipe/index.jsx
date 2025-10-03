@@ -135,7 +135,7 @@ const AddRecipe = () => {
         localStorage.getItem("recipeHub-token") ||
         sessionStorage.getItem("recipeHub-token");
 
-      await axios.post("http://localhost:5000/api/recipes", formDataToSend, {
+      await axios.post("https://yammiverse.onrender.com/api/recipes", formDataToSend, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,

@@ -13,7 +13,7 @@ const FavoriteRecipeCard = ({ recipe, onToggleFavorite }) => {
   //  Normalize Image URL
   let imageUrl = recipe?.coverImage || recipe?.image;
   if (imageUrl && !imageUrl.startsWith("http")) {
-    imageUrl = `http://localhost:5000/${imageUrl.replace(/\\/g, "/")}`;
+    imageUrl = `https://yammiverse.onrender.com/${imageUrl.replace(/\\/g, "/")}`;
   }
   if (!imageUrl) {
     imageUrl = "https://via.placeholder.com/400x300?text=No+Image";

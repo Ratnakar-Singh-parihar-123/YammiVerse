@@ -111,7 +111,7 @@ const HomePage = () => {
     setLoading(true);
     setError(null);
     try {
-      const recipesRes = await axios.get("http://localhost:5000/api/recipes");
+      const recipesRes = await axios.get("https://yammiverse.onrender.com/api/recipes");
       setAllRecipes(recipesRes.data?.recipes || []);
       setFeatured(recipesRes.data?.recipes.filter((r) => r.featured) || []);
 
@@ -119,7 +119,7 @@ const HomePage = () => {
       if (token) {
         try {
           const userRes = await axios.get(
-            "http://localhost:5000/api/users/me",
+            "https://yammiverse.onrender.com/api/users/me",
             {
               headers: { Authorization: `Bearer ${token}` },
             }

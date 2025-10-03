@@ -20,7 +20,7 @@ const FavoritesPage = () => {
     const fetchFavorites = async () => {
       try {
         setLoading(true);
-        const res = await axios.get("http://localhost:5000/api/favorites", {
+        const res = await axios.get("https://yammiverse.onrender.com/api/favorites", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setFavoriteRecipes(res.data?.favorites || []);
@@ -36,7 +36,7 @@ const FavoritesPage = () => {
   //  Toggle Favorite (Remove from list)
   const handleToggleFavorite = async (recipeId) => {
     try {
-      await axios.delete(`http://localhost:5000/api/favorites/${recipeId}`, {
+      await axios.delete(`https://yammiverse.onrender.com/api/favorites/${recipeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       // Remove from local state

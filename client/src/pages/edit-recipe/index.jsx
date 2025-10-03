@@ -22,7 +22,7 @@ const EditRecipe = () => {
           sessionStorage.getItem('recipeHub-token');
 
         const res = await axios.get(
-          `http://localhost:5000/api/recipes/${recipeId}`,
+          `https://yammiverse.onrender.com/api/recipes/${recipeId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -47,7 +47,7 @@ const EditRecipe = () => {
         sessionStorage.getItem('recipeHub-token');
 
       const res = await axios.put(
-        `http://localhost:5000/api/recipes/${recipeId}`,
+        `https://yammiverse.onrender.com/api/recipes/${recipeId}`,
         updatedRecipe,
         { headers: { Authorization: `Bearer ${token}` } }
       );

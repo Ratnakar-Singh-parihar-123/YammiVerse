@@ -21,7 +21,7 @@ const AccountSettings = ({ onLogout }) => {
     const fetchSettings = async () => {
       try {
         const res = await axios.get(
-          "http://localhost:5000/api/users/settings",
+          "https://yammiverse.onrender.com/api/users/settings",
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -45,7 +45,7 @@ const AccountSettings = ({ onLogout }) => {
       const updated = { ...settings, [key]: value };
       setSettings(updated); // optimistic UI update
       const res = await axios.put(
-        "http://localhost:5000/api/users/settings",
+        "https://yammiverse.onrender.com/api/users/settings",
         updated,
         { headers: { Authorization: `Bearer ${token}` } }
       );

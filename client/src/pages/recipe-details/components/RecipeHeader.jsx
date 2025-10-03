@@ -24,7 +24,7 @@ const RecipeHeader = ({
   //  Ensure full image URL
   let imageUrl = recipe?.coverImage || recipe?.image;
   if (imageUrl && !imageUrl.startsWith("http")) {
-    imageUrl = `http://localhost:5000/${imageUrl.replace(/\\/g, "/")}`;
+    imageUrl = `https://yammiverse.onrender.com${imageUrl.replace(/\\/g, "/")}`;
   }
 
   //  Check ownership (only creator can edit/delete)

@@ -121,13 +121,13 @@ const CombinedAuth = () => {
       let res;
       if (isSignIn) {
         // ✅ Login API
-        res = await axios.post("http://localhost:5000/api/users/login", {
+        res = await axios.post("https://yammiverse.onrender.com/api/users/login", {
           email: formData.email,
           password: formData.password,
         });
       } else {
         // ✅ Signup API
-        res = await axios.post("http://localhost:5000/api/users/signup", {
+        res = await axios.post("https://yammiverse.onrender.com/api/users/signup", {
           fullName: formData.fullName,
           email: formData.email,
           password: formData.password,

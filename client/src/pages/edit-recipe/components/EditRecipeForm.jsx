@@ -119,7 +119,7 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
       }
 
       const token = localStorage.getItem('recipeHub-token');
-      const res = await fetch(`http://localhost:5000/api/recipes/${recipeId}`, {
+      const res = await fetch(`https://yammiverse.onrender.com/api/recipes/${recipeId}`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
         body: data,

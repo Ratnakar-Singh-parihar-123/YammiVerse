@@ -20,7 +20,7 @@ const ProfileHeader = ({ user, onImageChange }) => {
     try {
       setUploading(true);
       const res = await axios.put(
-        "http://localhost:5000/api/users/me/avatar",
+        "https://yammiverse.onrender.com/api/users/me/avatar",
         formData,
         {
           headers: {
@@ -47,7 +47,7 @@ const ProfileHeader = ({ user, onImageChange }) => {
   let avatarUrl = user?.avatar
     ? user?.avatar.startsWith("http")
       ? user.avatar
-      : `http://localhost:5000${user.avatar.replace(/\\/g, "/")}`
+      : `https://yammiverse.onrender.com/${user.avatar.replace(/\\/g, "/")}`
     : "/default-avatar.png";
 
   return (

@@ -17,14 +17,14 @@ const RecipeCard = ({ recipe, isFavorite, onFavoriteUpdate }) => {
     e?.stopPropagation();
     try {
       if (favorite) {
-        await axios.delete(`http://localhost:5000/api/favorites/${recipe?._id}`, {
+        await axios.delete(`https://yammiverse.onrender.com/api/favorites/${recipe?._id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setFavorite(false);
         onFavoriteUpdate && onFavoriteUpdate(recipe?._id, false);
       } else {
         await axios.post(
-          `http://localhost:5000/api/favorites/${recipe?._id}`,
+          `https://yammiverse.onrender.com/api/favorites/${recipe?._id}`,
           {},
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -53,7 +53,7 @@ const RecipeCard = ({ recipe, isFavorite, onFavoriteUpdate }) => {
   //  Construct full image URL
   const imageUrl = recipe?.image?.startsWith("http")
     ? recipe?.image
-    : `http://localhost:5000/${recipe?.image?.replace(/\\/g, "/")}`;
+    : `https://yammiverse.onrender.com/${recipe?.image?.replace(/\\/g, "/")}`;
 
   return (
     <div

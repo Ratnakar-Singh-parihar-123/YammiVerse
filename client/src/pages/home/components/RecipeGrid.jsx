@@ -62,7 +62,7 @@ const RecipeGrid = ({
         //  Normalize image URL
         let imageUrl = recipe?.coverImage || recipe?.image;
         if (imageUrl && !imageUrl.startsWith("http")) {
-          imageUrl = `http://localhost:5000/${imageUrl.replace(/\\/g, "/")}`;
+          imageUrl = `https://yammiverse.onrender.com/${imageUrl.replace(/\\/g, "/")}`;
         }
         if (!imageUrl) {
           imageUrl = "https://via.placeholder.com/400x300?text=No+Image";
@@ -138,7 +138,7 @@ const RecipeGrid = ({
                             const token =
                               localStorage.getItem("recipeHub-token");
                             await fetch(
-                              `http://localhost:5000/api/recipes/${recipe?._id}`,
+                              `https://yammiverse.onrender.com/api/recipes/${recipe?._id}`,
                               {
                                 method: "DELETE",
                                 headers: {

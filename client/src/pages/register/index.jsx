@@ -63,7 +63,7 @@ const RegisterPage = () => {
 
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:5000/api/users/signup", {
+      const res = await axios.post("https://yammiverse.onrender.com/api/users/signup", {
         fullName: formData.fullName,
         email: formData.email,
         password: formData.password,
