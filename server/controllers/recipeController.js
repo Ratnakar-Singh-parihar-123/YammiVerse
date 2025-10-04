@@ -2,9 +2,7 @@ const Recipes = require("../models/recipe");
 const multer = require("multer");
 const path = require("path");
 
-
-// Multer storage config
-
+// ✅ Multer storage config
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "./public/images");
@@ -27,9 +25,7 @@ const upload = multer({
   },
 });
 
-
-// Get all recipes
-
+// ✅ Get all recipes
 const getRecipes = async (req, res) => {
   try {
     const recipes = await Recipes.find().populate("createdBy", "fullName email avatar");
@@ -39,9 +35,7 @@ const getRecipes = async (req, res) => {
   }
 };
 
-
-// Get recipe by ID
-
+// ✅ Get recipe by ID
 const getRecipe = async (req, res) => {
   try {
     const recipe = await Recipes.findById(req.params.id).populate("createdBy", "fullName email avatar");
@@ -52,16 +46,14 @@ const getRecipe = async (req, res) => {
   }
 };
 
-
-// Add new recipe
-
+// ✅ Add new recipe
 const addRecipe = async (req, res) => {
   try {
     const {
       title,
       ingredients,
       instructions,
-      time,   
+      cookingTime,   // ✅ consistent name
       servings,
       difficulty,
       category,
@@ -72,6 +64,10 @@ const addRecipe = async (req, res) => {
       return res.status(400).json({ message: "Title, ingredients and instructions are required" });
     }
 
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "Unauthorized: User not found" });
+    }
+
     const parsedIngredients = typeof ingredients === "string" ? JSON.parse(ingredients) : ingredients;
     const parsedInstructions = typeof instructions === "string" ? JSON.parse(instructions) : instructions;
 
@@ -79,25 +75,23 @@ const addRecipe = async (req, res) => {
       title,
       ingredients: parsedIngredients,
       instructions: parsedInstructions,
-      time,   // ✅ fixed
+      cookingTime,   // ✅ field match with model
       servings,
       difficulty,
       category,
       description,
       coverImage: req.file ? `/images/${req.file.filename}` : "",
-      createdBy: req.user?.id || null,
+      createdBy: req.user.id,
     });
 
     res.status(201).json({ message: "Recipe added successfully", recipe: newRecipe });
   } catch (error) {
-    console.error("Error adding recipe:", error);
+    console.error("❌ Error adding recipe:", error);
     res.status(500).json({ message: "Failed to add recipe", error: error.message });
   }
 };
 
-
-// Edit recipe
-
+// ✅ Edit recipe
 const editRecipe = async (req, res) => {
   try {
     const recipe = await Recipes.findById(req.params.id);
@@ -132,7 +126,7 @@ const editRecipe = async (req, res) => {
         title: req.body.title || recipe.title,
         ingredients: parsedIngredients,
         instructions: parsedInstructions,
-        time: req.body.time || recipe.time,   // ✅ fixed
+        cookingTime: req.body.cookingTime || recipe.cookingTime, // ✅ consistent
         servings: req.body.servings || recipe.servings,
         difficulty: req.body.difficulty || recipe.difficulty,
         category: req.body.category || recipe.category,
@@ -148,9 +142,7 @@ const editRecipe = async (req, res) => {
   }
 };
 
-
-// Delete recipe
-
+// ✅ Delete recipe
 const deleteRecipe = async (req, res) => {
   try {
     const recipe = await Recipes.findById(req.params.id);

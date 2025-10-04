@@ -1,21 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Input from '../../../components/ui/Input';
-import Button from '../../../components/ui/Button';
-import RecipeImageUpload from './RecipeImageUpload';
-import IngredientsEditor from './IngredientsEditor';
-import InstructionsEditor from './InstructionsEditor';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import Input from "../../../components/ui/Input";
+import Button from "../../../components/ui/Button";
+import RecipeImageUpload from "./RecipeImageUpload";
+import IngredientsEditor from "./IngredientsEditor";
+import InstructionsEditor from "./InstructionsEditor";
+import axios from "axios";
 
 const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
   const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
-    title: '',
-    cookingTime: '',
-    servings: '',
-    difficulty: 'medium',
-    category: '',
-    description: '',
-    image: null, // File ya URL dono ho sakta hai
+    title: "",
+    cookingTime: "",
+    servings: "",
+    difficulty: "medium",
+    category: "",
+    description: "",
+    image: null, // File ya URL
   });
 
   const [ingredients, setIngredients] = useState([]);
@@ -24,16 +26,16 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  //  Load recipe data
+  // 🔹 Load recipe data
   useEffect(() => {
     if (recipeData) {
       setFormData({
-        title: recipeData?.title || '',
-        cookingTime: recipeData?.cookingTime || '',
-        servings: recipeData?.servings || '',
-        difficulty: recipeData?.difficulty || 'medium',
-        category: recipeData?.category || '',
-        description: recipeData?.description || '',
+        title: recipeData?.title || "",
+        cookingTime: recipeData?.cookingTime || "",
+        servings: recipeData?.servings || "",
+        difficulty: recipeData?.difficulty || "medium",
+        category: recipeData?.category || "",
+        description: recipeData?.description || "",
         image: recipeData?.coverImage || recipeData?.image || null,
       });
       setIngredients(recipeData?.ingredients || []);
@@ -41,54 +43,51 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
     }
   }, [recipeData]);
 
-  // Track unsaved changes
+  // 🔹 Track unsaved changes
   useEffect(() => {
-    setHasUnsavedChanges(true);
+    if (recipeData) {
+      setHasUnsavedChanges(true);
+    }
   }, [formData, ingredients, instructions]);
 
-  //  Handle Input Change
+  // 🔹 Handle Input Change
   const handleInputChange = (e) => {
     const { name, value } = e?.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors?.[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
-  //  Handle Image Change
+  // 🔹 Handle Image Change
   const handleImageChange = (fileOrUrl) => {
     setFormData((prev) => ({ ...prev, image: fileOrUrl }));
   };
 
-  //  Validation
+  // 🔹 Validation
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData?.title?.trim()) newErrors.title = 'Recipe title is required';
+    if (!formData?.title?.trim()) newErrors.title = "Recipe title is required";
     if (!formData?.cookingTime?.trim())
-      newErrors.cookingTime = 'Cooking time is required';
-
-    if (!String(formData?.servings || '').trim())
-      newErrors.servings = 'Number of servings is required';
-
+      newErrors.cookingTime = "Cooking time is required";
+    if (!String(formData?.servings || "").trim())
+      newErrors.servings = "Number of servings is required";
     if (!formData?.category?.trim())
-      newErrors.category = 'Recipe category is required';
-
+      newErrors.category = "Recipe category is required";
     if (!ingredients?.length)
-      newErrors.ingredients = 'At least one ingredient is required';
+      newErrors.ingredients = "At least one ingredient is required";
     if (ingredients?.some((ing) => !ing?.name?.trim()))
-      newErrors.ingredients = 'All ingredients must have a name';
-
+      newErrors.ingredients = "All ingredients must have a name";
     if (!instructions?.length)
-      newErrors.instructions = 'At least one instruction step is required';
+      newErrors.instructions = "At least one instruction step is required";
     if (instructions?.some((inst) => !inst?.text?.trim()))
-      newErrors.instructions = 'All instruction steps must have text';
+      newErrors.instructions = "All instruction steps must have text";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  //  Submit Handler
+  // 🔹 Submit Handler
   const handleSubmit = async (e) => {
     e?.preventDefault();
     if (!validateForm()) return;
@@ -97,57 +96,63 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
     try {
       const recipeId = recipeData?._id || recipeData?.id;
       if (!recipeId) {
-        console.error('⚠️ RecipeData missing ID:', recipeData);
-        throw new Error('Recipe ID is missing, cannot update.');
+        throw new Error("Recipe ID is missing, cannot update.");
       }
 
       const data = new FormData();
-      data.append('title', formData.title);
-      data.append('cookingTime', formData.cookingTime);
-      data.append('servings', formData.servings);
-      data.append('difficulty', formData.difficulty);
-      data.append('category', formData.category);
-      data.append('description', formData.description);
-      data.append('ingredients', JSON.stringify(ingredients));
-      data.append('instructions', JSON.stringify(instructions));
+      data.append("title", formData.title);
+      data.append("cookingTime", formData.cookingTime);
+      data.append("servings", formData.servings);
+      data.append("difficulty", formData.difficulty);
+      data.append("category", formData.category);
+      data.append("description", formData.description);
+      data.append("ingredients", JSON.stringify(ingredients));
+      data.append("instructions", JSON.stringify(instructions));
 
-      //  Image handle
+      // 🔹 Handle Image
       if (formData.image && formData.image instanceof File) {
-        data.append('image', formData.image);
-      } else if (typeof formData.image === 'string') {
-        data.append('coverImage', formData.image);
+        data.append("image", formData.image);
+      } else if (typeof formData.image === "string") {
+        data.append("coverImage", formData.image);
       }
 
-      const token = localStorage.getItem('recipeHub-token');
-      const res = await fetch(`https://yammiverse.onrender.com/api/recipes/${recipeId}`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-        body: data,
-      });
+      const token =
+        localStorage.getItem("recipeHub-token") ||
+        sessionStorage.getItem("recipeHub-token");
 
-      const response = await res.json();
-      if (!res.ok) throw new Error(response.message || 'Failed to update recipe');
+      const res = await axios.put(
+        `https://yammiverse.onrender.com/api/recipes/${recipeId}`,
+        data,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
 
-      const updatedRecipe = response.recipe || response;
+      const updatedRecipe = res.data.recipe;
       await onSave(updatedRecipe);
-
       setHasUnsavedChanges(false);
       navigate(`/recipes/${updatedRecipe._id || updatedRecipe.id}`);
     } catch (error) {
-      console.error('❌ Error updating recipe:', error);
+      console.error("❌ Error updating recipe:", error);
       setErrors({
-        submit: error.message || 'Failed to update recipe. Please try again.',
+        submit:
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to update recipe. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  //  Cancel
+  // 🔹 Cancel
   const handleCancel = () => {
     if (hasUnsavedChanges) {
       const confirmLeave = window.confirm(
-        'You have unsaved changes. Are you sure you want to leave?'
+        "You have unsaved changes. Are you sure you want to leave?"
       );
       if (!confirmLeave) return;
     }
@@ -155,9 +160,9 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
   };
 
   const difficultyOptions = [
-    { value: 'easy', label: 'Easy' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'hard', label: 'Hard' },
+    { value: "easy", label: "Easy" },
+    { value: "medium", label: "Medium" },
+    { value: "hard", label: "Hard" },
   ];
 
   return (
@@ -167,7 +172,6 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
         <h2 className="text-xl font-heading font-semibold text-foreground">
           Basic Information
         </h2>
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Input
             label="Recipe Title"
@@ -186,7 +190,6 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
             required
           />
         </div>
-
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Input
             label="Cooking Time"
@@ -221,7 +224,6 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
             </select>
           </div>
         </div>
-
         <textarea
           name="description"
           value={formData.description}
@@ -283,7 +285,7 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
             iconName="Save"
             iconPosition="left"
           >
-            {isSubmitting ? 'Saving...' : 'Save Changes'}
+            {isSubmitting ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       </div>

@@ -14,10 +14,10 @@ const AddRecipe = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  //  Form state (cookingTime → time)
+  // ✅ Form state (cookingTime fix)
   const [formData, setFormData] = useState({
     title: "",
-    time: "", //  fixed field
+    cookingTime: "",
     servings: "",
     difficulty: "medium",
     category: "",
@@ -31,28 +31,29 @@ const AddRecipe = () => {
   const [instructions, setInstructions] = useState([
     { id: 1, step: 1, text: "" },
   ]);
+
   const [errors, setErrors] = useState({});
 
-  //  Track unsaved changes
+  // 🔹 Track unsaved changes
   useEffect(() => {
     const hasChanges =
-      formData?.title?.trim() !== "" ||
-      formData?.time?.trim() !== "" ||
-      formData?.servings?.trim() !== "" ||
-      formData?.category?.trim() !== "" ||
-      formData?.description?.trim() !== "" ||
-      formData?.image !== null ||
-      ingredients?.some(
+      formData.title.trim() !== "" ||
+      formData.cookingTime.trim() !== "" ||
+      formData.servings.trim() !== "" ||
+      formData.category.trim() !== "" ||
+      formData.description.trim() !== "" ||
+      formData.image !== null ||
+      ingredients.some(
         (ing) =>
-          ing?.name?.trim() !== "" ||
-          ing?.quantity?.trim() !== "" ||
-          ing?.unit?.trim() !== ""
+          ing.name.trim() !== "" ||
+          ing.quantity.trim() !== "" ||
+          ing.unit.trim() !== ""
       ) ||
-      instructions?.some((inst) => inst?.text?.trim() !== "");
+      instructions.some((inst) => inst.text.trim() !== "");
     setHasUnsavedChanges(hasChanges);
   }, [formData, ingredients, instructions]);
 
-  //  Input handler
+  // 🔹 Input handler
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors?.[field]) {
@@ -60,40 +61,45 @@ const AddRecipe = () => {
     }
   };
 
-  //  Validation
+  // 🔹 Validation
   const validateForm = () => {
     const newErrors = {};
-    if (!formData?.title?.trim()) newErrors.title = "Recipe title is required";
-    if (!formData?.time?.trim()) newErrors.time = "Cooking time is required";
-    if (!formData?.servings?.trim())
+    if (!formData.title.trim()) newErrors.title = "Recipe title is required";
+    if (!formData.cookingTime.trim())
+      newErrors.cookingTime = "Cooking time is required";
+    if (!formData.servings.trim())
       newErrors.servings = "Number of servings is required";
-    if (!formData?.category?.trim())
+    if (!formData.category.trim())
       newErrors.category = "Recipe category is required";
 
+    // Ingredients
     const validIngredients = ingredients.filter(
-      (ing) => ing?.name?.trim() !== "" && ing?.quantity?.trim() !== ""
+      (ing) => ing.name.trim() !== "" && ing.quantity.trim() !== ""
     );
     if (validIngredients.length === 0)
       newErrors.ingredients = "At least one ingredient is required";
 
+    // Instructions
     const validInstructions = instructions.filter(
-      (inst) => inst?.text?.trim() !== ""
+      (inst) => inst.text.trim() !== ""
     );
     if (validInstructions.length === 0)
       newErrors.instructions = "At least one instruction step is required";
 
+    // Cooking time format
     if (
-      formData?.time?.trim() &&
+      formData.cookingTime.trim() &&
       !/^\d+\s*(min|mins|minutes?|hr|hrs|hours?|h)$/i.test(
-        formData?.time?.trim()
+        formData.cookingTime.trim()
       )
     ) {
-      newErrors.time = 'Please use format like "30 mins" or "1 hour"';
+      newErrors.cookingTime = 'Please use format like "30 mins" or "1 hour"';
     }
 
+    // Servings check
     if (
-      formData?.servings?.trim() &&
-      (isNaN(formData?.servings) || parseInt(formData?.servings) < 1)
+      formData.servings.trim() &&
+      (isNaN(formData.servings) || parseInt(formData.servings) < 1)
     ) {
       newErrors.servings = "Servings must be a positive number";
     }
@@ -102,7 +108,7 @@ const AddRecipe = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  //  Save handler
+  // 🔹 Save handler
   const handleSave = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -110,22 +116,22 @@ const AddRecipe = () => {
 
     try {
       const validIngredients = ingredients.filter(
-        (ing) => ing?.name?.trim() !== "" && ing?.quantity?.trim() !== ""
+        (ing) => ing.name.trim() !== "" && ing.quantity.trim() !== ""
       );
       const validInstructions = instructions.filter(
-        (inst) => inst?.text?.trim() !== ""
+        (inst) => inst.text.trim() !== ""
       );
 
       const formDataToSend = new FormData();
       formDataToSend.append("title", formData.title);
-      formDataToSend.append("time", formData.time); //  fixed
+      formDataToSend.append("cookingTime", formData.cookingTime);
       formDataToSend.append("servings", formData.servings);
       formDataToSend.append("difficulty", formData.difficulty);
       formDataToSend.append("category", formData.category);
       formDataToSend.append("description", formData.description);
 
       if (formData.image instanceof File) {
-        formDataToSend.append("image", formData.image); //  backend route expects "image"
+        formDataToSend.append("image", formData.image);
       }
 
       formDataToSend.append("ingredients", JSON.stringify(validIngredients));
@@ -135,16 +141,20 @@ const AddRecipe = () => {
         localStorage.getItem("recipeHub-token") ||
         sessionStorage.getItem("recipeHub-token");
 
-      await axios.post("https://yammiverse.onrender.com/api/recipes", formDataToSend, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await axios.post(
+        "https://yammiverse.onrender.com/api/recipes",
+        formDataToSend,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       navigate("/home", { state: { message: "Recipe created successfully!" } });
     } catch (error) {
-      console.error("Error saving recipe:", error);
+      console.error("❌ Error saving recipe:", error);
       setErrors({
         submit:
           error.response?.data?.message ||
@@ -155,7 +165,7 @@ const AddRecipe = () => {
     }
   };
 
-  //  Options
+  // 🔹 Options
   const difficultyOptions = [
     { value: "easy", label: "Easy" },
     { value: "medium", label: "Medium" },
@@ -212,9 +222,9 @@ const AddRecipe = () => {
                   label="Recipe Title"
                   type="text"
                   placeholder="e.g., Grandma's Chocolate Chip Cookies"
-                  value={formData?.title}
-                  onChange={(e) => handleInputChange("title", e?.target?.value)}
-                  error={errors?.title}
+                  value={formData.title}
+                  onChange={(e) => handleInputChange("title", e.target.value)}
+                  error={errors.title}
                   required
                 />
               </div>
@@ -223,10 +233,11 @@ const AddRecipe = () => {
                 label="Cooking Time"
                 type="text"
                 placeholder="e.g., 45 mins"
-                value={formData?.time} //  fixed
-                onChange={(e) => handleInputChange("time", e?.target?.value)}
-                error={errors?.time}
-                description="Include prep and cook time"
+                value={formData.cookingTime}
+                onChange={(e) =>
+                  handleInputChange("cookingTime", e.target.value)
+                }
+                error={errors.cookingTime}
                 required
               />
 
@@ -234,11 +245,9 @@ const AddRecipe = () => {
                 label="Servings"
                 type="number"
                 placeholder="4"
-                value={formData?.servings}
-                onChange={(e) =>
-                  handleInputChange("servings", e?.target?.value)
-                }
-                error={errors?.servings}
+                value={formData.servings}
+                onChange={(e) => handleInputChange("servings", e.target.value)}
+                error={errors.servings}
                 min="1"
                 required
               />
@@ -248,15 +257,15 @@ const AddRecipe = () => {
                   Difficulty Level *
                 </label>
                 <select
-                  value={formData?.difficulty}
+                  value={formData.difficulty}
                   onChange={(e) =>
-                    handleInputChange("difficulty", e?.target?.value)
+                    handleInputChange("difficulty", e.target.value)
                   }
                   className="w-full h-10 px-3 py-2 bg-input border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                 >
-                  {difficultyOptions?.map((option) => (
-                    <option key={option?.value} value={option?.value}>
-                      {option?.label}
+                  {difficultyOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
                     </option>
                   ))}
                 </select>
@@ -267,22 +276,22 @@ const AddRecipe = () => {
                   Category *
                 </label>
                 <select
-                  value={formData?.category}
+                  value={formData.category}
                   onChange={(e) =>
-                    handleInputChange("category", e?.target?.value)
+                    handleInputChange("category", e.target.value)
                   }
                   className="w-full h-10 px-3 py-2 bg-input border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                 >
                   <option value="">Select a category</option>
-                  {categoryOptions?.map((category) => (
+                  {categoryOptions.map((category) => (
                     <option key={category} value={category}>
                       {category}
                     </option>
                   ))}
                 </select>
-                {errors?.category && (
+                {errors.category && (
                   <p className="text-sm text-destructive mt-1">
-                    {errors?.category}
+                    {errors.category}
                   </p>
                 )}
               </div>
@@ -293,9 +302,9 @@ const AddRecipe = () => {
                 </label>
                 <textarea
                   placeholder="Brief description of your recipe..."
-                  value={formData?.description}
+                  value={formData.description}
                   onChange={(e) =>
-                    handleInputChange("description", e?.target?.value)
+                    handleInputChange("description", e.target.value)
                   }
                   rows={3}
                   className="w-full px-3 py-2 bg-input border border-border rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
@@ -311,9 +320,9 @@ const AddRecipe = () => {
               <span>Recipe Photo</span>
             </h2>
             <RecipeImageUpload
-              image={formData?.image}
+              image={formData.image}
               onImageChange={(file) => handleInputChange("image", file)}
-              error={errors?.image}
+              error={errors.image}
             />
           </div>
 
@@ -326,7 +335,7 @@ const AddRecipe = () => {
             <IngredientsSection
               ingredients={ingredients}
               onIngredientsChange={setIngredients}
-              error={errors?.ingredients}
+              error={errors.ingredients}
             />
           </div>
 
@@ -339,15 +348,15 @@ const AddRecipe = () => {
             <InstructionsSection
               instructions={instructions}
               onInstructionsChange={setInstructions}
-              error={errors?.instructions}
+              error={errors.instructions}
             />
           </div>
 
           {/* Form Actions */}
           <div className="bg-card rounded-lg border border-border p-6">
-            {errors?.submit && (
+            {errors.submit && (
               <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                <p className="text-sm text-destructive">{errors?.submit}</p>
+                <p className="text-sm text-destructive">{errors.submit}</p>
               </div>
             )}
             <RecipeFormActions

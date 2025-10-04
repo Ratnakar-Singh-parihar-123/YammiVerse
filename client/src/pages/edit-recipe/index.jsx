@@ -1,35 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
-import TopNavigation from '../../components/ui/TopNavigation';
-import Icon from '../../components/AppIcon';
-import Button from '../../components/ui/Button';
-import EditRecipeForm from './components/EditRecipeForm';
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
+import TopNavigation from "../../components/ui/TopNavigation";
+import Icon from "../../components/AppIcon";
+import Button from "../../components/ui/Button";
+import EditRecipeForm from "./components/EditRecipeForm";
 
 const EditRecipe = () => {
   const navigate = useNavigate();
   const { id: recipeId } = useParams();
+
   const [recipeData, setRecipeData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  //  Fetch recipe
+  // 🔹 Fetch recipe
   useEffect(() => {
     const fetchRecipe = async () => {
       try {
         setIsLoading(true);
         const token =
-          localStorage.getItem('recipeHub-token') ||
-          sessionStorage.getItem('recipeHub-token');
+          localStorage.getItem("recipeHub-token") ||
+          sessionStorage.getItem("recipeHub-token");
 
         const res = await axios.get(
           `https://yammiverse.onrender.com/api/recipes/${recipeId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        //  Store only recipe object
         setRecipeData(res.data.recipe);
       } catch (err) {
-        console.error('❌ Failed to fetch recipe:', err);
+        console.error("❌ Failed to fetch recipe:", err);
         setRecipeData(null);
       } finally {
         setIsLoading(false);
@@ -39,23 +39,51 @@ const EditRecipe = () => {
     if (recipeId) fetchRecipe();
   }, [recipeId]);
 
-  //  Save handler
+  // 🔹 Save handler
   const handleSaveRecipe = async (updatedRecipe) => {
     try {
       const token =
-        localStorage.getItem('recipeHub-token') ||
-        sessionStorage.getItem('recipeHub-token');
+        localStorage.getItem("recipeHub-token") ||
+        sessionStorage.getItem("recipeHub-token");
+
+      // ✅ Convert to FormData
+      const formDataToSend = new FormData();
+      formDataToSend.append("title", updatedRecipe.title || "");
+      formDataToSend.append("cookingTime", updatedRecipe.cookingTime || "");
+      formDataToSend.append("servings", updatedRecipe.servings || 1);
+      formDataToSend.append("difficulty", updatedRecipe.difficulty || "medium");
+      formDataToSend.append("category", updatedRecipe.category || "");
+      formDataToSend.append("description", updatedRecipe.description || "");
+
+      if (updatedRecipe.image instanceof File) {
+        formDataToSend.append("image", updatedRecipe.image);
+      }
+
+      // Ingredients + Instructions ko stringify karna hoga
+      formDataToSend.append(
+        "ingredients",
+        JSON.stringify(updatedRecipe.ingredients || [])
+      );
+      formDataToSend.append(
+        "instructions",
+        JSON.stringify(updatedRecipe.instructions || [])
+      );
 
       const res = await axios.put(
         `https://yammiverse.onrender.com/api/recipes/${recipeId}`,
-        updatedRecipe,
-        { headers: { Authorization: `Bearer ${token}` } }
+        formDataToSend,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       setRecipeData(res.data.recipe);
       return res.data.recipe;
     } catch (err) {
-      console.error('❌ Failed to save recipe:', err);
+      console.error("❌ Failed to save recipe:", err);
       throw err;
     }
   };
@@ -68,7 +96,7 @@ const EditRecipe = () => {
     navigate(-1);
   };
 
-  //  Loading
+  // 🔹 Loading
   if (isLoading) {
     return (
       <>
@@ -83,14 +111,18 @@ const EditRecipe = () => {
     );
   }
 
-  //  Not Found
+  // 🔹 Not Found
   if (!recipeData) {
     return (
       <>
         <TopNavigation />
         <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="text-center space-y-6 max-w-md mx-auto mt-16">
-            <Icon name="AlertCircle" size={64} className="mx-auto text-muted-foreground" />
+            <Icon
+              name="AlertCircle"
+              size={64}
+              className="mx-auto text-muted-foreground"
+            />
             <h1 className="text-2xl font-heading font-semibold text-foreground">
               Recipe Not Found
             </h1>
@@ -109,7 +141,7 @@ const EditRecipe = () => {
               </Button>
               <Button
                 variant="default"
-                onClick={() => navigate('/home')}
+                onClick={() => navigate("/home")}
                 iconName="Home"
                 iconPosition="left"
                 iconSize={16}
@@ -123,7 +155,7 @@ const EditRecipe = () => {
     );
   }
 
-  //  Render page
+  // 🔹 Render page
   return (
     <>
       <TopNavigation />
@@ -148,7 +180,8 @@ const EditRecipe = () => {
                 Edit Recipe
               </h1>
               <p className="text-muted-foreground">
-                Make changes to your recipe and save them to update your collection.
+                Make changes to your recipe and save them to update your
+                collection.
               </p>
             </div>
           </div>
@@ -164,13 +197,13 @@ const EditRecipe = () => {
                   Currently Editing: {recipeData?.title}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Last updated:{' '}
-                  {new Date(recipeData.updatedAt)?.toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
+                  Last updated:{" "}
+                  {new Date(recipeData.updatedAt)?.toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
                   })}
                 </p>
               </div>
