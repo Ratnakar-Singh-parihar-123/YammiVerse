@@ -199,7 +199,7 @@ const updateAvatar = async (req, res) => {
 
     // ✅ Ensure base URL works on both localhost & Render
     const baseUrl =
-      process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
+      "https://yammiverse.onrender.com" || `${req.protocol}://${req.get("host")}`;
 
     res.json({
       message: "Avatar updated successfully",

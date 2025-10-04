@@ -55,7 +55,7 @@ router.get("/profile", authMiddleware, getProfile);
 router.put("/profile", authMiddleware, updateProfile);
 
 // ✅ Avatar upload (protected)
-router.post(
+router.put(
   "/me/avatar",
   authMiddleware,
   upload.single("avatar"), // 👈 frontend formData.append("avatar", file)
