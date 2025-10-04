@@ -2,7 +2,7 @@ const Recipes = require("../models/recipe");
 const multer = require("multer");
 const path = require("path");
 
-// Multer storage config
+// ✅ Multer storage config
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "./public/images");
@@ -53,7 +53,7 @@ const addRecipe = async (req, res) => {
       title,
       ingredients,
       instructions,
-      cookingTime, // ✅ corrected
+      cookingTime,
       servings,
       difficulty,
       category,
@@ -63,6 +63,7 @@ const addRecipe = async (req, res) => {
     if (!title || !ingredients || !instructions) {
       return res.status(400).json({ message: "Title, ingredients and instructions are required" });
     }
+
     if (!req.user || !req.user.id) {
       return res.status(401).json({ message: "Unauthorized: User not found" });
     }
@@ -74,13 +75,13 @@ const addRecipe = async (req, res) => {
       title,
       ingredients: parsedIngredients,
       instructions: parsedInstructions,
-      cookingTime, // ✅ corrected
+      cookingTime,
       servings,
       difficulty,
       category,
       description,
       coverImage: req.file ? `/images/${req.file.filename}` : "",
-      createdBy: req.user.id, // ✅ required
+      createdBy: req.user.id, // ✅ ab sahi chalega
     });
 
     res.status(201).json({ message: "Recipe added successfully", recipe: newRecipe });
@@ -125,7 +126,7 @@ const editRecipe = async (req, res) => {
         title: req.body.title || recipe.title,
         ingredients: parsedIngredients,
         instructions: parsedInstructions,
-        cookingTime: req.body.cookingTime || recipe.cookingTime, // ✅ corrected
+        cookingTime: req.body.cookingTime || recipe.cookingTime,
         servings: req.body.servings || recipe.servings,
         difficulty: req.body.difficulty || recipe.difficulty,
         category: req.body.category || recipe.category,
