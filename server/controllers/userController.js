@@ -17,14 +17,11 @@ const userSignUp = async (req, res) => {
     if (!email || !password || !fullName) {
       return res.status(400).json({ message: "All fields are required" });
     }
-
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email already exists" });
     }
-
     const hashedPassword = await bcrypt.hash(password, 12);
-
     const newUser = await User.create({
       fullName,
       email,
@@ -37,9 +34,7 @@ const userSignUp = async (req, res) => {
         showStats: true,
       },
     });
-
     const token = generateToken(newUser._id, newUser.email);
-
     res.status(201).json({
       message: "Signup successful",
       token,
@@ -67,7 +62,6 @@ const userLogin = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password are required" });
     }
-
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
@@ -75,7 +69,6 @@ const userLogin = async (req, res) => {
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
     const token = generateToken(user._id, user.email);
-
     res.status(200).json({
       message: "Login successful",
       token,
@@ -113,11 +106,9 @@ const getUser = async (req, res) => {
 const getCurrentUser = async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
-
     const user = await User.findById(req.user._id).select(
       "fullName email createdAt avatar bio location website settings"
     );
-
     res.status(200).json({
       message: "Current user fetched successfully",
       user,
@@ -168,7 +159,6 @@ const updateProfile = async (req, res) => {
     }
 
     const updatedUser = await user.save();
-
     res.json({
       message: "Profile updated successfully",
       user: {
@@ -193,7 +183,12 @@ const updateProfile = async (req, res) => {
 // ================== UPDATE AVATAR ==================
 const updateAvatar = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    console.log("📸 Avatar upload request received");
+    console.log("📂 req.file:", req.file);
+
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
 
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -216,7 +211,7 @@ const updateAvatar = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Avatar Update Error:", error.message);
+    console.error("❌ Avatar Update Error:", error.message);
     res.status(500).json({ message: "Failed to update avatar" });
   }
 };
@@ -226,7 +221,6 @@ const getSettings = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("settings");
     if (!user) return res.status(404).json({ message: "User not found" });
-
     res.json({
       message: "Settings fetched successfully",
       settings: user.settings,

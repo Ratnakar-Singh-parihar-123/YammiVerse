@@ -22,13 +22,15 @@ const ProfileHeader = ({ user, onImageChange }) => {
 
     try {
       setUploading(true);
-      const res = await axios.put(
+
+      // 🔥 Use POST instead of PUT for file upload
+      const res = await axios.post(
         "https://yammiverse.onrender.com/api/users/me/avatar",
         formData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            // ❌ Content-Type mat do, Axios khud set karega
+            // Axios khud Content-Type: multipart/form-data set karega
           },
         }
       );
@@ -36,6 +38,7 @@ const ProfileHeader = ({ user, onImageChange }) => {
       if (res.data?.user?.avatar) {
         onImageChange(res.data.user.avatar); // ✅ parent ko update karo
       }
+
       alert("✅ Profile picture updated!");
     } catch (error) {
       console.error("❌ Image upload failed:", error);
