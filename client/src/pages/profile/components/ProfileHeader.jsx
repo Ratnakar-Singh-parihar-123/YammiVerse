@@ -6,16 +6,19 @@ import axios from "axios";
 const ProfileHeader = ({ user, onImageChange }) => {
   const [isImageHovered, setIsImageHovered] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const token = localStorage.getItem("recipeHub-token");
 
-  //  Avatar Upload
+  // ✅ Token fix (localStorage ya sessionStorage dono check karega)
+  const token =
+    localStorage.getItem("recipeHub-token") ||
+    sessionStorage.getItem("recipeHub-token");
+
+  // ✅ Avatar Upload
   const handleImageUpload = async (event) => {
     const file = event?.target?.files?.[0];
     if (!file) return;
 
     const formData = new FormData();
-    // 👇 backend ke multer field ke naam ke hisaab se "avatar"
-    formData.append("avatar", file);
+    formData.append("avatar", file); // ✅ field name backend ke sath match hona chahiye
 
     try {
       setUploading(true);
@@ -25,25 +28,24 @@ const ProfileHeader = ({ user, onImageChange }) => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            // ❌ DON'T manually set Content-Type
-            // Axios khud `multipart/form-data` set karega
+            // Content-Type set mat karo, Axios khud karega
           },
         }
       );
 
       if (res.data?.user?.avatar) {
-        onImageChange(res.data.user.avatar); //  update avatar in parent
+        onImageChange(res.data.user.avatar); // parent ko update karo
       }
-      alert("Profile picture updated ");
+      alert("✅ Profile picture updated!");
     } catch (error) {
-      console.error("Image upload failed:", error);
+      console.error("❌ Image upload failed:", error);
       alert(error?.response?.data?.message || "Failed to upload image");
     } finally {
       setUploading(false);
     }
   };
 
-  //  Normalize Avatar URL (fix backslashes in Windows)
+  // ✅ Avatar URL normalize
   let avatarUrl = user?.avatar
     ? user?.avatar.startsWith("http")
       ? user.avatar

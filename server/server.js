@@ -5,7 +5,6 @@ const path = require("path");
 const connectDb = require("./config/connectionDb");
 
 dotenv.config();
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -17,34 +16,37 @@ app.use(express.json());
 
 // ✅ Allowed Origins
 const allowedOrigins = [
-  "http://localhost:3000",      // React default
-  "http://localhost:5173",      // Vite default
-  "https://yammiverse.onrender.com" // Your deployed frontend
+  "http://localhost:3000",       // CRA
+  "http://localhost:5173",       // Vite
+  process.env.FRONTEND_URL || "https://yammiverse.vercel.app", // ✅ frontend env
 ];
 
 // ✅ CORS Config
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // Postman, curl
+      if (!origin) return callback(null, true); // Postman, curl etc.
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      console.log("❌ Blocked by CORS:", origin);
+      console.warn("❌ Blocked by CORS:", origin);
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
 );
 
-// ✅ Debug origin (optional, remove in production)
-app.use((req, res, next) => {
-  console.log("Request Origin:", req.headers.origin);
-  next();
-});
+// ✅ Debug origin (dev only)
+if (process.env.NODE_ENV !== "production") {
+  app.use((req, res, next) => {
+    console.log("➡️ Request Origin:", req.headers.origin);
+    next();
+  });
+}
 
-// ✅ Static files
+// ✅ Static uploads (avatar / recipe images)
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
+app.use("/images", express.static(path.join(__dirname, "public/images")));
 app.use(express.static("public"));
 
 // ✅ API Routes
@@ -53,22 +55,26 @@ app.use("/api/recipes", require("./routes/recipe"));
 app.use("/api/favorites", require("./routes/favorite"));
 
 // -------------------------
-// ✅ React frontend serve
+// ✅ React / Vite frontend serve (production build)
 // -------------------------
-const frontendPath = path.join(__dirname, "../client/build"); // CRA -> build | Vite -> dist
-app.use(express.static(frontendPath));
-app.use((req, res, next) => {
-  if (req.method === "GET" && !req.path.startsWith("/api")) {
-    res.sendFile(path.resolve(frontendPath, "index.html"));
-  } else {
-    next();
-  }
-});
+const frontendPath = path.join(__dirname, "../client/dist"); // ⚡ change to "build" if CRA
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(frontendPath));
+
+  app.get("*", (req, res) => {
+    if (!req.path.startsWith("/api")) {
+      res.sendFile(path.resolve(frontendPath, "index.html"));
+    }
+  });
+}
 
 // ✅ Error handler
 app.use((err, req, res, next) => {
   console.error("🔥 Error:", err.message);
-  res.status(500).json({ message: "Something went wrong!", error: err.message });
+  res.status(500).json({
+    message: "Something went wrong!",
+    error: process.env.NODE_ENV === "production" ? undefined : err.message,
+  });
 });
 
 // ✅ Start Server

@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const path = require("path");
-
 const {
   userLogin,
   userSignUp,
@@ -11,18 +10,15 @@ const {
   updateAvatar,
   getProfile,
   updateProfile,
-  getSettings,      
-  updateSettings,   
+  getSettings,
+  updateSettings,
 } = require("../controllers/userController");
-
 const authMiddleware = require("../middleware/authMiddleware");
 
-
-// Multer Config (for avatar)
-
+// ✅ Multer Config (for avatar upload)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "../public/uploads")); // ✅ absolute path
+    cb(null, path.resolve(__dirname, "../public/uploads")); // absolute path
   },
   filename: (req, file, cb) => {
     cb(
@@ -44,9 +40,7 @@ const upload = multer({
   },
 });
 
-
-// User Routes
-
+// ================== USER ROUTES ==================
 
 // Signup
 router.post("/signup", userSignUp);
@@ -54,18 +48,18 @@ router.post("/signup", userSignUp);
 // Login
 router.post("/login", userLogin);
 
-// Current user basic info
+// Get current logged in user
 router.get("/me", authMiddleware, getCurrentUser);
 
 // Profile (fetch + update)
 router.get("/profile", authMiddleware, getProfile);
 router.put("/profile", authMiddleware, updateProfile);
 
-// Avatar upload
+// ✅ Avatar upload (protected)
 router.put(
   "/me/avatar",
   authMiddleware,
-  upload.single("avatar"), 
+  upload.single("avatar"),
   updateAvatar
 );
 
@@ -73,7 +67,7 @@ router.put(
 router.get("/settings", authMiddleware, getSettings);
 router.put("/settings", authMiddleware, updateSettings);
 
-// Get any user by ID (for public profile view)
+// Get any user by ID (public profile view)
 router.get("/:id", authMiddleware, getUser);
 
 // Logout

@@ -10,9 +10,9 @@ const generateToken = (id, email) => {
   return jwt.sign({ id, email }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 
+// ========================== AUTH ==========================
 
 // User SignUp
-
 const userSignUp = async (req, res) => {
   try {
     const { email, password, fullName } = req.body;
@@ -26,7 +26,6 @@ const userSignUp = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
-
     const newUser = await User.create({
       fullName,
       email,
@@ -62,9 +61,7 @@ const userSignUp = async (req, res) => {
   }
 };
 
-
 // User Login
-
 const userLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -100,25 +97,22 @@ const userLogin = async (req, res) => {
   }
 };
 
+// ========================== USERS ==========================
 
 // Get User by ID
-
 const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select(
       "fullName email createdAt avatar bio location website settings"
     );
     if (!user) return res.status(404).json({ message: "User not found" });
-
     res.json({ message: "User fetched successfully", user });
   } catch (error) {
     res.status(400).json({ message: "Invalid user ID", error: error.message });
   }
 };
 
-
 // Get Current User (/me)
-
 const getCurrentUser = async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
@@ -136,9 +130,9 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
+// ========================== PROFILE ==========================
 
 // Get Profile (/profile)
-
 const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
@@ -163,9 +157,7 @@ const getProfile = async (req, res) => {
   }
 };
 
-
 // Update Profile (/profile)
-
 const updateProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -205,9 +197,9 @@ const updateProfile = async (req, res) => {
   }
 };
 
+// ========================== AVATAR ==========================
 
-// Update Avatar
-
+// Update Avatar (/me/avatar)
 const updateAvatar = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
@@ -215,8 +207,12 @@ const updateAvatar = async (req, res) => {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    // Save relative path in DB
     user.avatar = `/uploads/${req.file.filename}`;
     await user.save();
+
+    // Dynamically set base URL
+    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
 
     res.json({
       message: "Avatar updated successfully",
@@ -224,9 +220,7 @@ const updateAvatar = async (req, res) => {
         id: user._id,
         fullName: user.fullName,
         email: user.email,
-        avatar: user.avatar
-          ? `http://localhost:5000${user.avatar.replace(/\\/g, "/")}`
-          : null,
+        avatar: `${baseUrl}${user.avatar.replace(/\\/g, "/")}`, // ✅ dynamic URL
       },
     });
   } catch (error) {
@@ -235,9 +229,9 @@ const updateAvatar = async (req, res) => {
   }
 };
 
+// ========================== SETTINGS ==========================
 
 // Get Settings (/settings)
-
 const getSettings = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("settings");
@@ -252,9 +246,7 @@ const getSettings = async (req, res) => {
   }
 };
 
-
 // Update Settings (/settings)
-
 const updateSettings = async (req, res) => {
   try {
     const { emailNotifications, weeklyDigest, recommendations, publicProfile, showStats } = req.body;
@@ -286,6 +278,6 @@ module.exports = {
   getProfile,
   updateProfile,
   updateAvatar,
-  getSettings,     // ✅ new
-  updateSettings,  // ✅ new
+  getSettings,
+  updateSettings,
 };
