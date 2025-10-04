@@ -8,6 +8,7 @@ import React, {
 import { Link, useLocation } from "react-router-dom";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
+
 import TopNavigation from "../../components/ui/TopNavigation";
 import SearchFilters from "./components/SearchFilters";
 import RecipeGrid from "./components/RecipeGrid";
@@ -71,31 +72,35 @@ const SkeletonBlock = ({ className = "" }) => (
 /* ---------------- Main HomePage ---------------- */
 const HomePage = () => {
   const location = useLocation();
+
   const [current, setCurrent] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({
     category: "",
-    cookingTime: "",
+    time: "",
     difficulty: "",
   });
+
   const [favorites, setFavorites] = useState(() =>
     JSON.parse(localStorage.getItem("rh-favorites") || "[]")
   );
   const [allRecipes, setAllRecipes] = useState([]);
   const [featured, setFeatured] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
   const prefersReducedMotion = usePrefersReducedMotion();
 
-  //  Pick search from query param
+  /* -------- Pick search from query param -------- */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const q = params.get("search") || "";
     setSearchTerm(q);
   }, [location.search]);
 
-  // Hero Banner Images
+  /* -------- Hero Banner Images -------- */
   const images = useMemo(
     () => [
       "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1600&q=80",
@@ -110,8 +115,11 @@ const HomePage = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
+
     try {
-      const recipesRes = await axios.get("https://yammiverse.onrender.com/api/recipes");
+      const recipesRes = await axios.get(
+        "https://yammiverse.onrender.com/api/recipes"
+      );
       setAllRecipes(recipesRes.data?.recipes || []);
       setFeatured(recipesRes.data?.recipes.filter((r) => r.featured) || []);
 
@@ -120,9 +128,7 @@ const HomePage = () => {
         try {
           const userRes = await axios.get(
             "https://yammiverse.onrender.com/api/users/me",
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
+            { headers: { Authorization: `Bearer ${token}` } }
           );
           setCurrentUser(userRes.data?.user || null);
         } catch {
@@ -158,34 +164,40 @@ const HomePage = () => {
         r.title?.toLowerCase().includes(s) ||
         r.description?.toLowerCase().includes(s);
 
-      //  Category filter
       const matchesCategory =
-        !filters.category || r.category?.toLowerCase() === filters.category.toLowerCase();
+        !filters.category ||
+        r.category?.toLowerCase() === filters.category.toLowerCase();
 
-      //  Cooking time filter (numeric)
       const matchesTime =
-        !filters.cookingTime ||
-        (r.cookingTime &&
-          parseInt(r.cookingTime) <= parseInt(filters.cookingTime));
+        !filters.time ||
+        (r.time && parseInt(r.time) <= parseInt(filters.time));
 
-      //  Difficulty filter (case-insensitive)
       const matchesDifficulty =
         !filters.difficulty ||
         r.difficulty?.toLowerCase() === filters.difficulty.toLowerCase();
 
-      return matchesSearch && matchesCategory && matchesTime && matchesDifficulty;
+      return (
+        matchesSearch &&
+        matchesCategory &&
+        matchesTime &&
+        matchesDifficulty
+      );
     });
   }, [searchTerm, filters, allRecipes]);
 
   /* -------- Stats -------- */
-  const stats = useMemo(
-    () => ({
+  const stats = useMemo(() => {
+    const recent = allRecipes
+      .filter((r) => r?.createdAt)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 5); // top 5 recent
+
+    return {
       totalRecipes: allRecipes.length,
       favoriteCount: favorites.length,
-      recentlyAdded: allRecipes.filter((r) => r?.createdAt).length,
-    }),
-    [favorites, allRecipes]
-  );
+      recentlyAdded: recent.length,
+    };
+  }, [favorites, allRecipes]);
 
   /* -------- Favorites -------- */
   const handleToggleFavorite = (id) => {
@@ -225,8 +237,10 @@ const HomePage = () => {
               )}
             </AnimatePresence>
           ))}
+
           {/* Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent" />
+
           {/* Text */}
           <div className="relative z-10 flex h-full flex-col items-center justify-center text-center text-white px-4">
             <motion.h1
@@ -261,6 +275,7 @@ const HomePage = () => {
               </a>
             </div>
           </div>
+
           {/* Controls */}
           <button
             onClick={() =>
@@ -276,6 +291,7 @@ const HomePage = () => {
           >
             ›
           </button>
+
           {/* Dots */}
           <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
             {images.map((_, i) => (

@@ -13,6 +13,7 @@ const RecipeGrid = ({
 }) => {
   const navigate = useNavigate();
 
+  // 🔹 Loader
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
@@ -21,6 +22,7 @@ const RecipeGrid = ({
     );
   }
 
+  // 🔹 Error
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -34,6 +36,7 @@ const RecipeGrid = ({
     );
   }
 
+  // 🔹 Empty state
   if (!recipes || recipes?.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -43,7 +46,6 @@ const RecipeGrid = ({
         <p className="text-muted-foreground mb-4">
           Try adjusting your search terms or filters to find more recipes.
         </p>
-        {/* CTA Button */}
         <Link
           to="/add-recipe"
           className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition"
@@ -59,10 +61,13 @@ const RecipeGrid = ({
       {recipes?.map((recipe) => {
         const isOwner = recipe?.createdBy?._id === currentUser?._id;
 
-        //  Normalize image URL
+        // 🔹 Normalize Image URL
         let imageUrl = recipe?.coverImage || recipe?.image;
         if (imageUrl && !imageUrl.startsWith("http")) {
-          imageUrl = `https://yammiverse.onrender.com/${imageUrl.replace(/\\/g, "/")}`;
+          imageUrl = `https://yammiverse.onrender.com/${imageUrl.replace(
+            /\\/g,
+            "/"
+          )}`;
         }
         if (!imageUrl) {
           imageUrl = "https://via.placeholder.com/400x300?text=No+Image";
@@ -74,14 +79,14 @@ const RecipeGrid = ({
             onClick={() => navigate(`/recipes/${recipe?._id}`)}
             className="bg-card border border-border rounded-lg shadow-sm overflow-hidden group flex flex-col hover:shadow-lg transition cursor-pointer"
           >
-            {/*  Recipe Image */}
+            {/* Recipe Image */}
             <img
               src={imageUrl}
               alt={recipe?.title}
               className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
             />
 
-            {/*  Recipe Content */}
+            {/* Recipe Content */}
             <div className="p-4 flex flex-col flex-grow">
               <h3 className="font-semibold text-lg text-foreground mb-2 line-clamp-1">
                 {recipe?.title}
@@ -90,13 +95,12 @@ const RecipeGrid = ({
                 {recipe?.description || "No description provided."}
               </p>
 
-              {/*  Actions */}
+              {/* Actions */}
               <div className="mt-auto flex items-center justify-between">
                 {/* Favorite Toggle */}
-                {/* Agar favorites feature on karna ho */}
-                {/* <button
+                <button
                   onClick={(e) => {
-                    e.stopPropagation(); // 🚫 prevent card navigation
+                    e.stopPropagation();
                     onToggleFavorite(recipe?._id);
                   }}
                   className="p-2 rounded-full hover:bg-muted transition"
@@ -106,14 +110,17 @@ const RecipeGrid = ({
                       favorites?.includes(recipe?._id) ? "Heart" : "HeartOff"
                     }
                     size={18}
-                    color={favorites?.includes(recipe?._id) ? "red" : "gray"}
+                    className={
+                      favorites?.includes(recipe?._id)
+                        ? "text-destructive"
+                        : "text-muted-foreground"
+                    }
                   />
-                </button> */}
+                </button>
 
-                {/* Owner Only Controls */}
+                {/* Owner Controls */}
                 {isOwner && (
                   <div className="flex items-center gap-2">
-                    {/* Edit button ab <button> hai, nested <Link> problem solve */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -123,7 +130,6 @@ const RecipeGrid = ({
                     >
                       Edit
                     </button>
-
                     <Button
                       size="sm"
                       variant="destructive"
@@ -141,9 +147,7 @@ const RecipeGrid = ({
                               `https://yammiverse.onrender.com/api/recipes/${recipe?._id}`,
                               {
                                 method: "DELETE",
-                                headers: {
-                                  Authorization: `Bearer ${token}`,
-                                },
+                                headers: { Authorization: `Bearer ${token}` },
                               }
                             );
                             window.location.reload();

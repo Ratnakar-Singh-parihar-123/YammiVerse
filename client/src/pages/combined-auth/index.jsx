@@ -11,6 +11,7 @@ import axios from "axios";
 const CombinedAuth = () => {
   const navigate = useNavigate();
   const [authMode, setAuthMode] = useState("signin"); // 'signin' or 'signup'
+
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -28,6 +29,7 @@ const CombinedAuth = () => {
 
   const isSignIn = authMode === "signin";
 
+  // 🔹 Input handler
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -41,6 +43,7 @@ const CombinedAuth = () => {
     }
   };
 
+  // 🔹 Mode switch
   const handleModeSwitch = (mode) => {
     setAuthMode(mode);
     setErrors({});
@@ -55,6 +58,7 @@ const CombinedAuth = () => {
     });
   };
 
+  // 🔹 Password strength check
   const getPasswordStrength = (password) => {
     if (!password) return { score: 0, text: "", color: "" };
     let score = 0;
@@ -66,52 +70,46 @@ const CombinedAuth = () => {
       /[^A-Za-z0-9]/.test(password),
     ];
     score = checks.filter(Boolean).length;
-
     if (score <= 2) return { score, text: "Weak", color: "text-destructive" };
     if (score <= 3) return { score, text: "Fair", color: "text-warning" };
     if (score <= 4) return { score, text: "Good", color: "text-success" };
     return { score, text: "Strong", color: "text-success" };
   };
-
   const passwordStrength = getPasswordStrength(formData?.password);
 
+  // 🔹 Form validation
   const validateForm = () => {
     const newErrors = {};
-
     if (!isSignIn && !formData?.fullName?.trim()) {
       newErrors.fullName = "Full name is required";
     } else if (!isSignIn && formData?.fullName?.trim()?.length < 2) {
       newErrors.fullName = "Full name must be at least 2 characters";
     }
-
     if (!formData?.email?.trim()) {
       newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData?.email)) {
       newErrors.email = "Please enter a valid email address";
     }
-
     if (!formData?.password?.trim()) {
       newErrors.password = "Password is required";
     } else if (formData?.password?.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
     }
-
     if (!isSignIn) {
       if (!formData?.confirmPassword?.trim()) {
         newErrors.confirmPassword = "Please confirm your password";
       } else if (formData?.password !== formData?.confirmPassword) {
         newErrors.confirmPassword = "Passwords do not match";
       }
-
       if (!formData?.agreeToTerms) {
         newErrors.agreeToTerms = "You must agree to the terms and conditions";
       }
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors)?.length === 0;
   };
 
+  // 🔹 Submit handler
   const handleSubmit = async (e) => {
     e?.preventDefault();
     if (!validateForm()) return;
@@ -131,12 +129,18 @@ const CombinedAuth = () => {
           fullName: formData.fullName,
           email: formData.email,
           password: formData.password,
+          subscribeNewsletter: formData.subscribeNewsletter,
         });
       }
 
-      // ✅ Save token & user
-      localStorage.setItem("token", res.data.token);
+      // ✅ Consistent token storage
+      localStorage.setItem("recipeHub-token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
+
+      // If rememberMe nahi hai to session me bhi daal do
+      if (!formData.rememberMe) {
+        sessionStorage.setItem("recipeHub-token", res.data.token);
+      }
 
       navigate("/home");
     } catch (error) {
@@ -150,10 +154,6 @@ const CombinedAuth = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSocialAuth = (provider) => {
-    console.log(`${isSignIn ? "Login" : "Register"} with ${provider}`);
   };
 
   return (
@@ -173,7 +173,6 @@ const CombinedAuth = () => {
             <div className="absolute top-4 right-4">
               <ThemeToggle />
             </div>
-
             <div className="text-center mb-6">
               <div className="flex items-center justify-center mb-4">
                 <div className="bg-primary rounded-full p-3">
@@ -271,7 +270,6 @@ const CombinedAuth = () => {
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
-
                 {!isSignIn && formData.password && (
                   <div className="mt-2">
                     <div className="flex justify-between text-xs">
@@ -323,7 +321,6 @@ const CombinedAuth = () => {
                   >
                     {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
-
                   {formData.confirmPassword && (
                     <div className="mt-1 text-xs">
                       {formData.password === formData.confirmPassword ? (

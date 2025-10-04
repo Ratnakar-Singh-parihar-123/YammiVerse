@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useNavigate } from "react-router-dom"; //  Link import add
+import { Link, useNavigate } from "react-router-dom";
 import Icon from "../../../components/AppIcon";
 import Image from "../../../components/AppImage";
 import Button from "../../../components/ui/Button";
@@ -21,14 +21,15 @@ const RecipeHeader = ({
     );
   }
 
-  //  Ensure full image URL
+  // ✅ Ensure full image URL
   let imageUrl = recipe?.coverImage || recipe?.image;
   if (imageUrl && !imageUrl.startsWith("http")) {
-    imageUrl = `https://yammiverse.onrender.com${imageUrl.replace(/\\/g, "/")}`;
+    imageUrl = `https://yammiverse.onrender.com/${imageUrl.replace(/\\/g, "/")}`;
   }
 
-  //  Check ownership (only creator can edit/delete)
+  // ✅ Safe ownership check
   const isOwner =
+    currentUser?._id?.toString() === recipe?.createdBy?.toString() ||
     currentUser?._id?.toString() === recipe?.createdBy?._id?.toString();
 
   return (
@@ -40,7 +41,6 @@ const RecipeHeader = ({
           alt={recipe?.title || "Recipe image"}
           className="w-full h-full object-cover"
         />
-
         {/* Favorite Button */}
         <button
           onClick={onToggleFavorite}
@@ -95,17 +95,16 @@ const RecipeHeader = ({
             </div>
           </div>
 
-          {/*  Owner-only Action Buttons */}
+          {/* ✅ Owner-only Action Buttons */}
           {isOwner && (
             <div className="flex items-center space-x-3">
               <Link
-                to={`/edit-recipe/${recipe?._id || recipe?.id}`} //  correct route
+                to={`/edit-recipe/${recipe?._id || recipe?.id}`}
                 className="px-4 py-2 text-sm border rounded-md hover:bg-muted transition min-w-[100px] flex items-center justify-center"
               >
                 <Icon name="Edit" size={16} className="mr-2" />
                 Edit
               </Link>
-
               <Button
                 variant="destructive"
                 iconName="Trash2"
@@ -119,7 +118,7 @@ const RecipeHeader = ({
           )}
         </div>
 
-        {/* Recipe Description */}
+        {/* Description */}
         {recipe?.description && (
           <p className="mt-4 text-muted-foreground leading-relaxed">
             {recipe?.description}

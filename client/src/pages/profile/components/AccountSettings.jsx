@@ -3,21 +3,23 @@ import { Checkbox } from "../../../components/ui/Checkbox";
 import Button from "../../../components/ui/Button";
 import Icon from "../../../components/AppIcon";
 import axios from "axios";
-import { useNavigate } from "react-router-dom"; //  Add this
+import { useNavigate } from "react-router-dom";
 
 const AccountSettings = ({ onLogout }) => {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const navigate = useNavigate(); //  hook for navigation
+
+  const navigate = useNavigate();
 
   const token =
     localStorage.getItem("recipeHub-token") ||
     sessionStorage.getItem("recipeHub-token");
 
-  //  Fetch settings from backend
+  // 🔹 Fetch settings from backend
   useEffect(() => {
     if (!token) return;
+
     const fetchSettings = async () => {
       try {
         const res = await axios.get(
@@ -28,42 +30,45 @@ const AccountSettings = ({ onLogout }) => {
         );
         setSettings(res.data.settings);
       } catch (error) {
-        console.error(
-          "❌ Failed to fetch settings:",
-          error.response?.data || error
-        );
+        console.error("❌ Failed to fetch settings:", error.response?.data || error);
       } finally {
         setLoading(false);
       }
     };
+
     fetchSettings();
   }, [token]);
 
-  //  Save setting change to backend
+  // 🔹 Save setting change to backend
   const handleSettingChange = async (key, value) => {
     try {
       const updated = { ...settings, [key]: value };
-      setSettings(updated); // optimistic UI update
+      setSettings(updated); // Optimistic update
+
       const res = await axios.put(
         "https://yammiverse.onrender.com/api/users/settings",
         updated,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setSettings(res.data.settings); // backend se fresh state
+
+      setSettings(res.data.settings); // Confirm backend state
     } catch (error) {
-      console.error(
-        "❌ Failed to update setting:",
-        error.response?.data || error
-      );
-      alert("Failed to update setting. Try again.");
+      console.error("❌ Failed to update setting:", error.response?.data || error);
+      alert("Failed to update setting. Please try again.");
     }
   };
 
-  //  Updated logout
+  // 🔹 Logout with confirmation
   const handleLogout = () => {
     setShowLogoutConfirm(false);
-    onLogout(); // token clear / state reset
-    navigate("/"); //  redirect to Home Page
+
+    // Clear tokens
+    localStorage.removeItem("recipeHub-token");
+    sessionStorage.removeItem("recipeHub-token");
+
+    onLogout?.();
+
+    navigate("/"); // redirect to home
   };
 
   if (loading) {
@@ -73,7 +78,7 @@ const AccountSettings = ({ onLogout }) => {
   return (
     <div className="space-y-6">
       {/* 🔔 Notification Preferences */}
-      <div className="bg-card rounded-lg p-6 shadow-warm">
+      <div className="bg-card rounded-lg p-6 shadow-lg border border-border">
         <h2 className="text-xl font-heading font-semibold text-foreground mb-6">
           Notification Preferences
         </h2>
@@ -106,7 +111,7 @@ const AccountSettings = ({ onLogout }) => {
       </div>
 
       {/* 🔒 Privacy Settings */}
-      <div className="bg-card rounded-lg p-6 shadow-warm">
+      <div className="bg-card rounded-lg p-6 shadow-lg border border-border">
         <h2 className="text-xl font-heading font-semibold text-foreground mb-6">
           Privacy Settings
         </h2>
@@ -129,7 +134,7 @@ const AccountSettings = ({ onLogout }) => {
       </div>
 
       {/* ⚙️ Account Actions */}
-      <div className="bg-card rounded-lg p-6 shadow-warm">
+      <div className="bg-card rounded-lg p-6 shadow-lg border border-border">
         <h2 className="text-xl font-heading font-semibold text-foreground mb-6">
           Account Actions
         </h2>
@@ -183,7 +188,7 @@ const AccountSettings = ({ onLogout }) => {
       {/* 🔔 Logout Confirmation Modal */}
       {showLogoutConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 backdrop-blur-sm">
-          <div className="bg-background rounded-lg p-6 max-w-md w-full mx-4 shadow-warm-lg">
+          <div className="bg-background rounded-lg p-6 max-w-md w-full mx-4 shadow-lg border border-border">
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-10 h-10 bg-destructive/10 rounded-full flex items-center justify-center">
                 <Icon

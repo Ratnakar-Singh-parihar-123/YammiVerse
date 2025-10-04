@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+
+// Components
 import TopNavigation from "../../components/ui/TopNavigation";
 import ProfileHeader from "./components/ProfileHeader";
 import ProfileForm from "./components/ProfileForm";
 import AccountSettings from "./components/AccountSettings";
 
+const API_BASE_URL = "https://yammiverse.onrender.com/api"; // 🔹 Backend base URL
+
 const ProfilePage = () => {
   const navigate = useNavigate();
+
   const [user, setUser] = useState(null);
   const [settings, setSettings] = useState({
     emailNotifications: true,
@@ -19,22 +24,26 @@ const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState("profile");
   const [loading, setLoading] = useState(true);
 
+  // 🔹 Get token
   const token =
     localStorage.getItem("recipeHub-token") ||
     sessionStorage.getItem("recipeHub-token");
 
-  //  Fetch Profile (with stats)
+  // =====================================================
+  // 📌 Fetch Profile
+  // =====================================================
   const fetchUserProfile = async () => {
     try {
-      const res = await axios.get("https://yammiverse.onrender.com/api/users/profile", {
+      const res = await axios.get(`${API_BASE_URL}/users/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUser(res.data.user);
     } catch (error) {
-      console.error("Failed to fetch profile:", error.response?.data || error);
+      console.error("❌ Failed to fetch profile:", error.response?.data || error);
+      // token clear + redirect
       localStorage.removeItem("recipeHub-token");
       sessionStorage.removeItem("recipeHub-token");
-      navigate("/login");
+      navigate("/login", { replace: true });
     } finally {
       setLoading(false);
     }
@@ -42,47 +51,48 @@ const ProfilePage = () => {
 
   useEffect(() => {
     if (!token) {
-      navigate("/login");
+      navigate("/login", { replace: true });
       return;
     }
     fetchUserProfile();
   }, [token, navigate]);
 
-  //  Avatar Upload
+  // =====================================================
+  // 📌 Avatar Upload
+  // =====================================================
   const handleImageChange = async (file) => {
     try {
       const formData = new FormData();
       formData.append("avatar", file);
 
-      const res = await axios.put(
-        "https://yammiverse.onrender.com/api/users/me/avatar",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await axios.put(`${API_BASE_URL}/users/me/avatar`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
-      // refresh profile after upload
       await fetchUserProfile();
-      alert(" Profile picture updated!");
+      alert("✅ Profile picture updated!");
     } catch (error) {
-      console.error("Image upload failed:", error.response?.data || error);
+      console.error("❌ Image upload failed:", error.response?.data || error);
       alert("❌ Image upload failed. Try again.");
     }
   };
 
-  //  Profile Update
+  // =====================================================
+  // 📌 Profile Update
+  // =====================================================
   const handleProfileSave = async (formData) => {
     try {
-      await axios.put("https://yammiverse.onrender.com/api/users/profile", formData, {
+      await axios.put(`${API_BASE_URL}/users/profile`, formData, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       await fetchUserProfile();
-      alert(" Profile updated successfully!");
+      alert("✅ Profile updated successfully!");
     } catch (error) {
-      console.error("Profile update failed:", error.response?.data || error);
+      console.error("❌ Profile update failed:", error.response?.data || error);
       alert("❌ Profile update failed. Try again.");
     }
   };
@@ -91,6 +101,9 @@ const ProfilePage = () => {
     console.log("Profile edit cancelled");
   };
 
+  // =====================================================
+  // 📌 Settings
+  // =====================================================
   const handleSettingsChange = (newSettings) => {
     setSettings(newSettings);
   };
@@ -98,10 +111,12 @@ const ProfilePage = () => {
   const handleLogout = () => {
     localStorage.removeItem("recipeHub-token");
     sessionStorage.removeItem("recipeHub-token");
-    navigate("/login");
+    navigate("/login", { replace: true });
   };
 
-  //  Loading state
+  // =====================================================
+  // 📌 Loading State
+  // =====================================================
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -113,14 +128,18 @@ const ProfilePage = () => {
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-destructive">User not found. Please log in again.</p>
+        <p className="text-destructive">❌ User not found. Please log in again.</p>
       </div>
     );
   }
 
+  // =====================================================
+  // 📌 Render
+  // =====================================================
   return (
     <div className="min-h-screen bg-background">
       <TopNavigation />
+
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Page Header */}
         <div className="mb-8">

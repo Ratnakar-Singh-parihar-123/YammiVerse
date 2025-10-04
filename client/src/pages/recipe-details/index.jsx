@@ -16,46 +16,58 @@ const RecipeDetailsPage = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState(null); // 👈 Added
+  const [currentUser, setCurrentUser] = useState(null);
 
   const token =
     localStorage.getItem("recipeHub-token") ||
     sessionStorage.getItem("recipeHub-token");
 
-  //  Fetch recipe + user + favorites
+  // 🔹 Fetch recipe + user + favorites
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
 
-        // Get recipe
+        // ✅ Get recipe
         const res = await axios.get(
           `https://yammiverse.onrender.com/api/recipes/${recipeId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
+
         let recipeData = res.data.recipe || res.data;
 
-        // Fix image URL
+        // Normalize image URL
         if (recipeData?.image && !recipeData.image.startsWith("http")) {
           recipeData.image = `https://yammiverse.onrender.com/${recipeData.image.replace(
             /\\/g,
             "/"
           )}`;
         }
+
         setRecipe(recipeData);
 
-        // Get current user
-        const userRes = await axios.get("https://yammiverse.onrender.com/api/users/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setCurrentUser(userRes.data.user);
+        // ✅ Get current user
+        if (token) {
+          try {
+            const userRes = await axios.get(
+              "https://yammiverse.onrender.com/api/users/me",
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setCurrentUser(userRes.data.user);
+          } catch {
+            setCurrentUser(null);
+          }
+        }
 
-        // Get favorites
-        const favRes = await axios.get("https://yammiverse.onrender.com/api/favorites", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const favorites = favRes.data.favorites || [];
-        setIsFavorite(favorites.some((fav) => fav._id === recipeId));
+        // ✅ Get favorites
+        if (token) {
+          const favRes = await axios.get(
+            "https://yammiverse.onrender.com/api/favorites",
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          const favorites = favRes.data.favorites || [];
+          setIsFavorite(favorites.some((fav) => fav._id === recipeId));
+        }
       } catch (err) {
         console.error("❌ Error fetching recipe details:", err);
         setRecipe(null);
@@ -67,13 +79,14 @@ const RecipeDetailsPage = () => {
     if (recipeId) fetchData();
   }, [recipeId, token]);
 
-  //  Toggle favorite
+  // 🔹 Toggle favorite
   const handleToggleFavorite = async () => {
     try {
       if (isFavorite) {
-        await axios.delete(`https://yammiverse.onrender.com/api/favorites/${recipeId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await axios.delete(
+          `https://yammiverse.onrender.com/api/favorites/${recipeId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         setIsFavorite(false);
       } else {
         await axios.post(
@@ -88,20 +101,23 @@ const RecipeDetailsPage = () => {
     }
   };
 
-  //  Edit
+  // 🔹 Edit
   const handleEdit = () => {
-    navigate(`/recipes/edit/${recipeId}`);
+    navigate(`/edit-recipe/${recipeId}`); // ✅ FIXED route
   };
 
-  //  Delete
+  // 🔹 Delete
   const handleDelete = () => setIsDeleteModalOpen(true);
 
   const handleConfirmDelete = async () => {
     try {
-      await axios.delete(`https://yammiverse.onrender.com/api/recipes/${recipeId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.delete(
+        `https://yammiverse.onrender.com/api/recipes/${recipeId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
       console.log(` Recipe ${recipe?.title} deleted`);
+
       navigate("/home", {
         state: { message: "Recipe deleted successfully!" },
       });
@@ -114,7 +130,7 @@ const RecipeDetailsPage = () => {
 
   const handleCloseDeleteModal = () => setIsDeleteModalOpen(false);
 
-  //  Loading state
+  // 🔹 Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -129,7 +145,7 @@ const RecipeDetailsPage = () => {
     );
   }
 
-  //  Not found
+  // 🔹 Not found
   if (!recipe) {
     return (
       <div className="min-h-screen bg-background">
@@ -154,7 +170,7 @@ const RecipeDetailsPage = () => {
     );
   }
 
-  //  Render Recipe
+  // 🔹 Render Recipe
   return (
     <div className="min-h-screen bg-background">
       <TopNavigation />
@@ -167,7 +183,7 @@ const RecipeDetailsPage = () => {
             onToggleFavorite={handleToggleFavorite}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            currentUser={currentUser} // 👈 Pass currentUser here
+            currentUser={currentUser}
           />
 
           {/* Content */}

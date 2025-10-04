@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+
 import TopNavigation from "../../components/ui/TopNavigation";
 import Input from "../../components/ui/Input";
 import RecipeImageUpload from "./components/RecipeImageUpload";
@@ -34,7 +35,6 @@ const AddRecipe = () => {
   const [ingredients, setIngredients] = useState([
     { id: 1, name: "", quantity: "", unit: "" },
   ]);
-
   const [instructions, setInstructions] = useState([
     { id: 1, step: 1, text: "" },
   ]);
@@ -57,6 +57,7 @@ const AddRecipe = () => {
           ing?.unit?.trim() !== ""
       ) ||
       instructions?.some((inst) => inst?.text?.trim() !== "");
+
     setHasUnsavedChanges(hasChanges);
   }, [formData, ingredients, instructions]);
 
@@ -71,6 +72,7 @@ const AddRecipe = () => {
   // 🔹 Validation
   const validateForm = () => {
     const newErrors = {};
+
     if (!formData?.title?.trim()) newErrors.title = "Recipe title is required";
     if (!formData?.time?.trim()) newErrors.time = "Cooking time is required";
     if (!formData?.servings?.trim())
@@ -116,6 +118,7 @@ const AddRecipe = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+
     setIsLoading(true);
 
     try {
@@ -154,7 +157,7 @@ const AddRecipe = () => {
 
       navigate("/home", { state: { message: "Recipe created successfully!" } });
     } catch (error) {
-      console.error("Error saving recipe:", error);
+      console.error("❌ Error saving recipe:", error);
       setErrors({
         submit:
           error.response?.data?.message ||
@@ -188,7 +191,6 @@ const AddRecipe = () => {
     "Vegan",
   ];
 
-  // 🔹 Render UI
   return (
     <div className="min-h-screen bg-background">
       <TopNavigation />

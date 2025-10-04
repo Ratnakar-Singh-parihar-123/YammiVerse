@@ -1,33 +1,51 @@
-import React, { useState, useEffect } from 'react';
-import Image from '../../../components/AppImage';
-import Icon from '../../../components/AppIcon';
-import Button from '../../../components/ui/Button';
+import React, { useState, useEffect } from "react";
+import Image from "../../../components/AppImage";
+import Icon from "../../../components/AppIcon";
+import Button from "../../../components/ui/Button";
 
 const RecipeImageUpload = ({ currentImage, onImageChange, error }) => {
   const [previewImage, setPreviewImage] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  //  If currentImage is string (from DB), show directly
+  // 🔹 Show current image from DB
   useEffect(() => {
-    if (typeof currentImage === "string") {
-      setPreviewImage(currentImage.startsWith("http") 
-        ? currentImage 
-        : `https://yammiverse.onrender.com/${currentImage.replace(/\\/g, "/")}`);
+    if (typeof currentImage === "string" && currentImage.trim() !== "") {
+      setPreviewImage(
+        currentImage.startsWith("http")
+          ? currentImage
+          : `https://yammiverse.onrender.com/${currentImage.replace(/\\/g, "/")}`
+      );
     }
   }, [currentImage]);
 
+  // 🔹 Validate & upload image
   const handleImageUpload = (file) => {
-    if (file && file.type?.startsWith("image/")) {
-      setPreviewImage(URL.createObjectURL(file)); //  show preview
-      onImageChange(file); //  send actual File object to parent
+    if (!file) return;
+
+    if (!file.type?.startsWith("image/")) {
+      alert("❌ Only image files are allowed");
+      return;
     }
+
+    if (file.size > 10 * 1024 * 1024) {
+      // 10 MB limit
+      alert("❌ File size must be less than 10MB");
+      return;
+    }
+
+    setPreviewImage(URL.createObjectURL(file)); // Preview
+    onImageChange(file); // Send to parent
   };
 
   const handleFileSelect = (e) => {
     const file = e?.target?.files?.[0];
     if (file) handleImageUpload(file);
+
+    // reset input so selecting same file again will trigger change
+    e.target.value = "";
   };
 
+  // 🔹 Drag & Drop handlers
   const handleDragOver = (e) => {
     e.preventDefault();
     setIsDragging(true);
@@ -41,6 +59,7 @@ const RecipeImageUpload = ({ currentImage, onImageChange, error }) => {
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
+
     const file = e?.dataTransfer?.files?.[0];
     if (file) handleImageUpload(file);
   };
@@ -95,7 +114,7 @@ const RecipeImageUpload = ({ currentImage, onImageChange, error }) => {
                 Click to upload or drag and drop
               </p>
               <p className="text-xs text-muted-foreground">
-                PNG, JPG, GIF up to 10MB
+                PNG, JPG, JPEG, WEBP (Max 10MB)
               </p>
             </div>
           </div>

@@ -3,53 +3,61 @@ import Image from "../../../components/AppImage";
 import Icon from "../../../components/AppIcon";
 import axios from "axios";
 
+const API_BASE_URL = "https://yammiverse.onrender.com/api"; // 🔹 backend base URL
+
 const ProfileHeader = ({ user, onImageChange }) => {
   const [isImageHovered, setIsImageHovered] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const token = localStorage.getItem("recipeHub-token");
 
-  //  Avatar Upload
+  const token =
+    localStorage.getItem("recipeHub-token") ||
+    sessionStorage.getItem("recipeHub-token");
+
+  // =====================================================
+  // 📌 Avatar Upload
+  // =====================================================
   const handleImageUpload = async (event) => {
     const file = event?.target?.files?.[0];
     if (!file) return;
 
     const formData = new FormData();
-    // 👇 backend ke multer field ke naam ke hisaab se "avatar"
-    formData.append("avatar", file);
+    formData.append("avatar", file); // 👈 multer field name
 
     try {
       setUploading(true);
-      const res = await axios.put(
-        "https://yammiverse.onrender.com/api/users/me/avatar",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            // ❌ DON'T manually set Content-Type
-            // Axios khud `multipart/form-data` set karega
-          },
-        }
-      );
+
+      const res = await axios.put(`${API_BASE_URL}/users/me/avatar`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          // ❌ Content-Type mat set karo → Axios khud karega
+        },
+      });
 
       if (res.data?.user?.avatar) {
-        onImageChange(res.data.user.avatar); //  update avatar in parent
+        onImageChange(res.data.user.avatar); // parent me avatar update
       }
-      alert("Profile picture updated ");
+
+      alert("✅ Profile picture updated!");
     } catch (error) {
-      console.error("Image upload failed:", error);
+      console.error("❌ Image upload failed:", error.response?.data || error);
       alert(error?.response?.data?.message || "Failed to upload image");
     } finally {
       setUploading(false);
     }
   };
 
-  //  Normalize Avatar URL (fix backslashes in Windows)
+  // =====================================================
+  // 📌 Normalize Avatar URL
+  // =====================================================
   let avatarUrl = user?.avatar
     ? user?.avatar.startsWith("http")
       ? user.avatar
       : `https://yammiverse.onrender.com/${user.avatar.replace(/\\/g, "/")}`
     : "/default-avatar.png";
 
+  // =====================================================
+  // 📌 Render
+  // =====================================================
   return (
     <div className="bg-card rounded-2xl p-6 shadow-lg border border-border">
       <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-6 sm:space-y-0 sm:space-x-8">
@@ -111,13 +119,13 @@ const ProfileHeader = ({ user, onImageChange }) => {
           {/* Extra Info */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 text-sm text-muted-foreground mb-6 space-y-2 sm:space-y-0">
             {user?.location && (
-              <div className="flex items-center justify-center sm:justify-start space-x-2">
+              <div className="flex items-center space-x-2">
                 <Icon name="MapPin" size={16} />
                 <span>{user.location}</span>
               </div>
             )}
             {user?.website && (
-              <div className="flex items-center justify-center sm:justify-start space-x-2">
+              <div className="flex items-center space-x-2">
                 <Icon name="Globe" size={16} />
                 <a
                   href={user.website}
