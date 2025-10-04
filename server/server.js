@@ -5,6 +5,7 @@ const path = require("path");
 const connectDb = require("./config/connectionDb");
 
 dotenv.config();
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -16,8 +17,8 @@ app.use(express.json());
 
 // ✅ Allowed Origins
 const allowedOrigins = [
-  "http://localhost:3000",    // React default
-  "http://localhost:5173",    // Vite default
+  "http://localhost:3000",      // React default
+  "http://localhost:5173",      // Vite default
   "https://yammiverse.onrender.com" // Your deployed frontend
 ];
 
@@ -42,7 +43,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// ✅ Static files (uploads for avatars/images)
+// ✅ Static files
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 app.use(express.static("public"));
 
@@ -56,9 +57,7 @@ app.use("/api/favorites", require("./routes/favorite"));
 // -------------------------
 const frontendPath = path.join(__dirname, "../client/build"); // CRA -> build | Vite -> dist
 app.use(express.static(frontendPath));
-
-// ✅ Fix: Express v5 requires "/*" instead of "*"
-app.get("/*", (req, res, next) => {
+app.use((req, res, next) => {
   if (req.method === "GET" && !req.path.startsWith("/api")) {
     res.sendFile(path.resolve(frontendPath, "index.html"));
   } else {
