@@ -46,7 +46,7 @@ const EditRecipe = () => {
         localStorage.getItem("recipeHub-token") ||
         sessionStorage.getItem("recipeHub-token");
 
-      // ✅ Convert to FormData
+      //  Convert to FormData
       const formDataToSend = new FormData();
       formDataToSend.append("title", updatedRecipe.title || "");
       formDataToSend.append("cookingTime", updatedRecipe.cookingTime || "");

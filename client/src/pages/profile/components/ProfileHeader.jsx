@@ -6,49 +6,44 @@ import axios from "axios";
 const ProfileHeader = ({ user, onImageChange }) => {
   const [isImageHovered, setIsImageHovered] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const token = localStorage.getItem("recipeHub-token");
 
-  // ✅ Token fix (localStorage + sessionStorage check)
-  const token =
-    localStorage.getItem("recipeHub-token") ||
-    sessionStorage.getItem("recipeHub-token");
-
-  // ✅ Avatar Upload
+  //  Avatar Upload
   const handleImageUpload = async (event) => {
     const file = event?.target?.files?.[0];
     if (!file) return;
 
     const formData = new FormData();
-    formData.append("avatar", file); // ✅ field name backend ke sath match hona chahiye
+    // 👇 backend ke multer field ke naam ke hisaab se "avatar"
+    formData.append("avatar", file);
 
     try {
       setUploading(true);
-
-      // 🔥 Use POST instead of PUT for file upload
-      const res = await axios.post(
+      const res = await axios.put(
         "https://yammiverse.onrender.com/api/users/me/avatar",
         formData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            // Axios khud Content-Type: multipart/form-data set karega
+            // ❌ DON'T manually set Content-Type
+            // Axios khud `multipart/form-data` set karega
           },
         }
       );
 
       if (res.data?.user?.avatar) {
-        onImageChange(res.data.user.avatar); // ✅ parent ko update karo
+        onImageChange(res.data.user.avatar); //  update avatar in parent
       }
-
-      alert("✅ Profile picture updated!");
+      alert("Profile picture updated ");
     } catch (error) {
-      console.error("❌ Image upload failed:", error);
+      console.error("Image upload failed:", error);
       alert(error?.response?.data?.message || "Failed to upload image");
     } finally {
       setUploading(false);
     }
   };
 
-  // ✅ Avatar URL normalize (backend path → full URL)
+  //  Normalize Avatar URL (fix backslashes in Windows)
   let avatarUrl = user?.avatar
     ? user?.avatar.startsWith("http")
       ? user.avatar

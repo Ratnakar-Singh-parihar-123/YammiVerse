@@ -120,13 +120,13 @@ const CombinedAuth = () => {
     try {
       let res;
       if (isSignIn) {
-        // ✅ Login API
+        //  Login API
         res = await axios.post("https://yammiverse.onrender.com/api/users/login", {
           email: formData.email,
           password: formData.password,
         });
       } else {
-        // ✅ Signup API
+        //  Signup API
         res = await axios.post("https://yammiverse.onrender.com/api/users/signup", {
           fullName: formData.fullName,
           email: formData.email,
@@ -134,7 +134,7 @@ const CombinedAuth = () => {
         });
       }
 
-      // ✅ Save token & user
+      //  Save token & user
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
 

@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 
-// ✅ Middleware to protect routes
+//  Middleware to protect routes
 const authMiddleware = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -18,7 +18,7 @@ const authMiddleware = async (req, res, next) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    req.user = user; // ✅ attach user to request
+    req.user = user; //  attach user to request
     next();
   } catch (error) {
     console.error("Auth Error:", error.message);

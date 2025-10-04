@@ -26,16 +26,16 @@ const userSchema = new mongoose.Schema(
     },
     avatar: {
       type: String,
-      default: "/uploads/default-avatar.png", // ✅ default profile picture
+      default: "/uploads/default-avatar.png", //  default profile picture
     },
-    // ✅ Favorites relation with Recipe model
+    //  Favorites relation with Recipe model
     favorites: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Recipe",
       },
     ],
-    // ✅ Account Settings (for notifications & privacy)
+    //  Account Settings (for notifications & privacy)
     settings: {
       emailNotifications: { type: Boolean, default: true },
       weeklyDigest: { type: Boolean, default: false },

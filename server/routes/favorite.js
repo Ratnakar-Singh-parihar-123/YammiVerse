@@ -7,13 +7,13 @@ const {
   removeFavorite
 } = require("../controllers/favoriteController");
 
-// ✅ Get all favorites of logged-in user
+//  Get all favorites of logged-in user
 router.get("/", verifyToken, getFavorites);
 
-// ✅ Add a recipe to favorites
+//  Add a recipe to favorites
 router.post("/:recipeId", verifyToken, addFavorite);
 
-// ✅ Remove from favorites
+//  Remove from favorites
 router.delete("/:recipeId", verifyToken, removeFavorite);
 
 module.exports = router;

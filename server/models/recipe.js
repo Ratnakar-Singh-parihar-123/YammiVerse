@@ -20,7 +20,7 @@ const recipeSchema = new mongoose.Schema(
         text: { type: String, required: true },
       },
     ],
-    cookingTime: {   // ✅ yehi naam consistent rahega
+    cookingTime: {   //  yehi naam consistent rahega
       type: String,
       default: "",
     },

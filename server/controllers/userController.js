@@ -1,27 +1,32 @@
+// controllers/userController.js
 const User = require("../models/user");
 const Recipe = require("../models/recipe");
 const Favorite = require("../models/favorite");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const path = require("path");
 
 // 🔑 Helper: Generate JWT
 const generateToken = (id, email) => {
   return jwt.sign({ id, email }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 
-// ================== SIGNUP ==================
+
+// User SignUp
+
 const userSignUp = async (req, res) => {
   try {
     const { email, password, fullName } = req.body;
     if (!email || !password || !fullName) {
       return res.status(400).json({ message: "All fields are required" });
     }
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email already exists" });
     }
+
     const hashedPassword = await bcrypt.hash(password, 12);
+
     const newUser = await User.create({
       fullName,
       email,
@@ -32,9 +37,11 @@ const userSignUp = async (req, res) => {
         recommendations: true,
         publicProfile: true,
         showStats: true,
-      },
+      }, //  default settings
     });
+
     const token = generateToken(newUser._id, newUser.email);
+
     res.status(201).json({
       message: "Signup successful",
       token,
@@ -55,13 +62,16 @@ const userSignUp = async (req, res) => {
   }
 };
 
-// ================== LOGIN ==================
+
+// User Login
+
 const userLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password are required" });
     }
+
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
@@ -69,6 +79,7 @@ const userLogin = async (req, res) => {
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
     const token = generateToken(user._id, user.email);
+
     res.status(200).json({
       message: "Login successful",
       token,
@@ -89,26 +100,33 @@ const userLogin = async (req, res) => {
   }
 };
 
-// ================== GET USER ==================
+
+// Get User by ID
+
 const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select(
       "fullName email createdAt avatar bio location website settings"
     );
     if (!user) return res.status(404).json({ message: "User not found" });
+
     res.json({ message: "User fetched successfully", user });
   } catch (error) {
     res.status(400).json({ message: "Invalid user ID", error: error.message });
   }
 };
 
-// ================== GET CURRENT USER ==================
+
+// Get Current User (/me)
+
 const getCurrentUser = async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+
     const user = await User.findById(req.user._id).select(
       "fullName email createdAt avatar bio location website settings"
     );
+
     res.status(200).json({
       message: "Current user fetched successfully",
       user,
@@ -118,12 +136,15 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
-// ================== GET PROFILE ==================
+
+// Get Profile (/profile)
+
 const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    //  Stats: recipes count & favorites count
     const totalRecipes = await Recipe.countDocuments({ createdBy: req.user._id });
     const totalFavorites = await Favorite.countDocuments({ user: req.user._id });
 
@@ -142,12 +163,15 @@ const getProfile = async (req, res) => {
   }
 };
 
-// ================== UPDATE PROFILE ==================
+
+// Update Profile (/profile)
+
 const updateProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    //  Update allowed fields
     user.fullName = req.body.fullName || user.fullName;
     user.email = req.body.email || user.email;
     user.bio = req.body.bio || user.bio;
@@ -159,6 +183,7 @@ const updateProfile = async (req, res) => {
     }
 
     const updatedUser = await user.save();
+
     res.json({
       message: "Profile updated successfully",
       user: {
@@ -180,26 +205,18 @@ const updateProfile = async (req, res) => {
   }
 };
 
-// ================== UPDATE AVATAR ==================
+
+// Update Avatar
+
 const updateAvatar = async (req, res) => {
   try {
-    console.log("📸 Avatar upload request received");
-    console.log("📂 req.file:", req.file);
-
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
-    }
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // ✅ Save relative path
     user.avatar = `/uploads/${req.file.filename}`;
     await user.save();
-
-    // ✅ Ensure base URL works on both localhost & Render
-    const baseUrl =
-      "https://yammiverse.onrender.com" || `${req.protocol}://${req.get("host")}`;
 
     res.json({
       message: "Avatar updated successfully",
@@ -207,50 +224,46 @@ const updateAvatar = async (req, res) => {
         id: user._id,
         fullName: user.fullName,
         email: user.email,
-        avatar: `${baseUrl}${user.avatar.replace(/\\/g, "/")}`,
+        avatar: user.avatar
+          ? `http://localhost:5000${user.avatar.replace(/\\/g, "/")}`
+          : null,
       },
     });
   } catch (error) {
-    console.error("❌ Avatar Update Error:", error.message);
+    console.error("Avatar Update Error:", error.message);
     res.status(500).json({ message: "Failed to update avatar" });
   }
 };
 
-// ================== GET SETTINGS ==================
+
+// Get Settings (/settings)
+
 const getSettings = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("settings");
     if (!user) return res.status(404).json({ message: "User not found" });
+
     res.json({
       message: "Settings fetched successfully",
       settings: user.settings,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Failed to fetch settings", error: error.message });
+    res.status(500).json({ message: "Failed to fetch settings", error: error.message });
   }
 };
 
-// ================== UPDATE SETTINGS ==================
+
+// Update Settings (/settings)
+
 const updateSettings = async (req, res) => {
   try {
-    const {
-      emailNotifications,
-      weeklyDigest,
-      recommendations,
-      publicProfile,
-      showStats,
-    } = req.body;
-
+    const { emailNotifications, weeklyDigest, recommendations, publicProfile, showStats } = req.body;
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    user.settings.emailNotifications =
-      emailNotifications ?? user.settings.emailNotifications;
+    user.settings.emailNotifications = emailNotifications ?? user.settings.emailNotifications;
     user.settings.weeklyDigest = weeklyDigest ?? user.settings.weeklyDigest;
-    user.settings.recommendations =
-      recommendations ?? user.settings.recommendations;
+    user.settings.recommendations = recommendations ?? user.settings.recommendations;
     user.settings.publicProfile = publicProfile ?? user.settings.publicProfile;
     user.settings.showStats = showStats ?? user.settings.showStats;
 
@@ -261,9 +274,7 @@ const updateSettings = async (req, res) => {
       settings: user.settings,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Failed to update settings", error: error.message });
+    res.status(500).json({ message: "Failed to update settings", error: error.message });
   }
 };
 
@@ -275,6 +286,6 @@ module.exports = {
   getProfile,
   updateProfile,
   updateAvatar,
-  getSettings,
-  updateSettings,
+  getSettings,     //  new
+  updateSettings,  //  new
 };

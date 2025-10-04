@@ -3,7 +3,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-// ✅ Ensure upload folder exists (Render par zaroori hai)
+//  Ensure upload folder exists (Render par zaroori hai)
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const dir = "./public/images";
@@ -30,7 +30,7 @@ const upload = multer({
   },
 });
 
-// ✅ Get all recipes
+//  Get all recipes
 const getRecipes = async (req, res) => {
   try {
     const recipes = await Recipes.find().populate("createdBy", "fullName email avatar");
@@ -40,7 +40,7 @@ const getRecipes = async (req, res) => {
   }
 };
 
-// ✅ Get recipe by ID
+//  Get recipe by ID
 const getRecipe = async (req, res) => {
   try {
     const recipe = await Recipes.findById(req.params.id).populate("createdBy", "fullName email avatar");
@@ -51,14 +51,14 @@ const getRecipe = async (req, res) => {
   }
 };
 
-// ✅ Add new recipe
+//  Add new recipe
 const addRecipe = async (req, res) => {
   try {
     const {
       title,
       ingredients,
       instructions,
-      cookingTime, // ✅ field consistent
+      cookingTime, //  field consistent
       servings,
       difficulty,
       category,
@@ -73,7 +73,7 @@ const addRecipe = async (req, res) => {
       return res.status(401).json({ message: "Unauthorized: User not found" });
     }
 
-    // ✅ Parse JSON fields safely
+    //  Parse JSON fields safely
     let parsedIngredients = [];
     let parsedInstructions = [];
 
@@ -109,7 +109,7 @@ const addRecipe = async (req, res) => {
   }
 };
 
-// ✅ Edit recipe
+//  Edit recipe
 const editRecipe = async (req, res) => {
   try {
     const recipe = await Recipes.findById(req.params.id);
@@ -160,7 +160,7 @@ const editRecipe = async (req, res) => {
   }
 };
 
-// ✅ Delete recipe
+//  Delete recipe
 const deleteRecipe = async (req, res) => {
   try {
     const recipe = await Recipes.findById(req.params.id);
