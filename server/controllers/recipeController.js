@@ -1,11 +1,16 @@
 const Recipes = require("../models/recipe");
 const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
 
-// ✅ Multer storage config
+// ✅ Ensure upload folder exists (Render par zaroori hai)
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "./public/images");
+    const dir = "./public/images";
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    cb(null, dir);
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase();
@@ -53,7 +58,7 @@ const addRecipe = async (req, res) => {
       title,
       ingredients,
       instructions,
-      cookingTime,   // ✅ consistent name
+      cookingTime, // ✅ field consistent
       servings,
       difficulty,
       category,
@@ -68,14 +73,27 @@ const addRecipe = async (req, res) => {
       return res.status(401).json({ message: "Unauthorized: User not found" });
     }
 
-    const parsedIngredients = typeof ingredients === "string" ? JSON.parse(ingredients) : ingredients;
-    const parsedInstructions = typeof instructions === "string" ? JSON.parse(instructions) : instructions;
+    // ✅ Parse JSON fields safely
+    let parsedIngredients = [];
+    let parsedInstructions = [];
+
+    try {
+      parsedIngredients = typeof ingredients === "string" ? JSON.parse(ingredients) : ingredients;
+    } catch {
+      return res.status(400).json({ message: "Invalid ingredients format" });
+    }
+
+    try {
+      parsedInstructions = typeof instructions === "string" ? JSON.parse(instructions) : instructions;
+    } catch {
+      return res.status(400).json({ message: "Invalid instructions format" });
+    }
 
     const newRecipe = await Recipes.create({
       title,
       ingredients: parsedIngredients,
       instructions: parsedInstructions,
-      cookingTime,   // ✅ field match with model
+      cookingTime,
       servings,
       difficulty,
       category,
@@ -126,7 +144,7 @@ const editRecipe = async (req, res) => {
         title: req.body.title || recipe.title,
         ingredients: parsedIngredients,
         instructions: parsedInstructions,
-        cookingTime: req.body.cookingTime || recipe.cookingTime, // ✅ consistent
+        cookingTime: req.body.cookingTime || recipe.cookingTime,
         servings: req.body.servings || recipe.servings,
         difficulty: req.body.difficulty || recipe.difficulty,
         category: req.body.category || recipe.category,
