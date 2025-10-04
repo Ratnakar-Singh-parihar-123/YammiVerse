@@ -10,7 +10,7 @@ import InstructionsSection from "./components/InstructionsSection";
 import RecipeFormActions from "./components/RecipeFormActions";
 import Icon from "../../components/AppIcon";
 
-// ✅ Auto API Base URL (local vs deployed)
+// ✅ Auto API Base URL
 const API_BASE =
   window.location.hostname === "localhost"
     ? "http://localhost:5000"
@@ -24,7 +24,7 @@ const AddRecipe = () => {
   // 🔹 Form state
   const [formData, setFormData] = useState({
     title: "",
-    time: "",
+    cookingTime: "",
     servings: "",
     difficulty: "medium",
     category: "",
@@ -45,7 +45,7 @@ const AddRecipe = () => {
   useEffect(() => {
     const hasChanges =
       formData?.title?.trim() !== "" ||
-      formData?.time?.trim() !== "" ||
+      formData?.cookingTime?.trim() !== "" ||
       formData?.servings?.trim() !== "" ||
       formData?.category?.trim() !== "" ||
       formData?.description?.trim() !== "" ||
@@ -74,7 +74,8 @@ const AddRecipe = () => {
     const newErrors = {};
 
     if (!formData?.title?.trim()) newErrors.title = "Recipe title is required";
-    if (!formData?.time?.trim()) newErrors.time = "Cooking time is required";
+    if (!formData?.cookingTime?.trim())
+      newErrors.cookingTime = "Cooking time is required";
     if (!formData?.servings?.trim())
       newErrors.servings = "Number of servings is required";
     if (!formData?.category?.trim())
@@ -94,12 +95,12 @@ const AddRecipe = () => {
 
     // Cooking time format check
     if (
-      formData?.time?.trim() &&
+      formData?.cookingTime?.trim() &&
       !/^\d+\s*(min|mins|minutes?|hr|hrs|hours?|h)$/i.test(
-        formData?.time?.trim()
+        formData?.cookingTime?.trim()
       )
     ) {
-      newErrors.time = 'Please use format like "30 mins" or "1 hour"';
+      newErrors.cookingTime = 'Please use format like "30 mins" or "1 hour"';
     }
 
     // Servings check
@@ -131,7 +132,7 @@ const AddRecipe = () => {
 
       const formDataToSend = new FormData();
       formDataToSend.append("title", formData.title);
-      formDataToSend.append("time", formData.time);
+      formDataToSend.append("cookingTime", formData.cookingTime);
       formDataToSend.append("servings", formData.servings);
       formDataToSend.append("difficulty", formData.difficulty);
       formDataToSend.append("category", formData.category);
@@ -225,7 +226,9 @@ const AddRecipe = () => {
                   type="text"
                   placeholder="e.g., Grandma's Chocolate Chip Cookies"
                   value={formData?.title}
-                  onChange={(e) => handleInputChange("title", e?.target?.value)}
+                  onChange={(e) =>
+                    handleInputChange("title", e?.target?.value)
+                  }
                   error={errors?.title}
                   required
                 />
@@ -234,9 +237,11 @@ const AddRecipe = () => {
                 label="Cooking Time"
                 type="text"
                 placeholder="e.g., 45 mins"
-                value={formData?.time}
-                onChange={(e) => handleInputChange("time", e?.target?.value)}
-                error={errors?.time}
+                value={formData?.cookingTime}
+                onChange={(e) =>
+                  handleInputChange("cookingTime", e?.target?.value)
+                }
+                error={errors?.cookingTime}
                 required
               />
               <Input
