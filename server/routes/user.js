@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const path = require("path");
+
 const {
   userLogin,
   userSignUp,
@@ -13,12 +14,14 @@ const {
   getSettings,
   updateSettings,
 } = require("../controllers/userController");
+
 const authMiddleware = require("../middleware/authMiddleware");
 
-// ✅ Multer Config (for avatar upload)
+// ================== MULTER CONFIG ==================
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.resolve(__dirname, "../public/uploads")); // absolute path
+    // ✅ Make sure uploads dir exists in deployment
+    cb(null, path.join(__dirname, "../public/uploads"));
   },
   filename: (req, file, cb) => {
     cb(
@@ -30,32 +33,33 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // ✅ 5MB limit
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     if ([".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error("Only images are allowed (jpg, jpeg, png, webp)"), false);
+      cb(new Error("Only image files are allowed (jpg, jpeg, png, webp)"), false);
     }
   },
 });
 
 // ================== USER ROUTES ==================
 
-// Signup
+// 🔹 Signup
 router.post("/signup", userSignUp);
 
-// Login
+// 🔹 Login
 router.post("/login", userLogin);
 
-// Get current logged in user
+// 🔹 Current logged-in user
 router.get("/me", authMiddleware, getCurrentUser);
 
-// Profile (fetch + update)
+// 🔹 Profile (fetch + update)
 router.get("/profile", authMiddleware, getProfile);
 router.put("/profile", authMiddleware, updateProfile);
 
-// ✅ Avatar upload (protected)
+// 🔹 Avatar upload (protected, must match `avatar` field in frontend)
 router.put(
   "/me/avatar",
   authMiddleware,
@@ -63,14 +67,14 @@ router.put(
   updateAvatar
 );
 
-// ✅ Account Settings
+// 🔹 Account Settings
 router.get("/settings", authMiddleware, getSettings);
 router.put("/settings", authMiddleware, updateSettings);
 
-// Get any user by ID (public profile view)
+// 🔹 Get any user by ID (public profile view)
 router.get("/:id", authMiddleware, getUser);
 
-// Logout
+// 🔹 Logout
 router.post("/logout", (req, res) => {
   try {
     res.clearCookie("token");

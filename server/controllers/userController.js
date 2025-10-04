@@ -1,16 +1,16 @@
-// controllers/userController.js
 const User = require("../models/user");
 const Recipe = require("../models/recipe");
 const Favorite = require("../models/favorite");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const path = require("path");
 
 // 🔑 Helper: Generate JWT
 const generateToken = (id, email) => {
   return jwt.sign({ id, email }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 
-// User SignUp
+// ================== SIGNUP ==================
 const userSignUp = async (req, res) => {
   try {
     const { email, password, fullName } = req.body;
@@ -60,7 +60,7 @@ const userSignUp = async (req, res) => {
   }
 };
 
-// User Login
+// ================== LOGIN ==================
 const userLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -96,21 +96,20 @@ const userLogin = async (req, res) => {
   }
 };
 
-// Get User by ID
+// ================== GET USER ==================
 const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select(
       "fullName email createdAt avatar bio location website settings"
     );
     if (!user) return res.status(404).json({ message: "User not found" });
-
     res.json({ message: "User fetched successfully", user });
   } catch (error) {
     res.status(400).json({ message: "Invalid user ID", error: error.message });
   }
 };
 
-// Get Current User (/me)
+// ================== GET CURRENT USER ==================
 const getCurrentUser = async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
@@ -128,7 +127,7 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
-// Get Profile (/profile)
+// ================== GET PROFILE ==================
 const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
@@ -152,7 +151,7 @@ const getProfile = async (req, res) => {
   }
 };
 
-// Update Profile (/profile)
+// ================== UPDATE PROFILE ==================
 const updateProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -191,7 +190,7 @@ const updateProfile = async (req, res) => {
   }
 };
 
-// ✅ Update Avatar
+// ================== UPDATE AVATAR ==================
 const updateAvatar = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
@@ -199,11 +198,13 @@ const updateAvatar = async (req, res) => {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    // ✅ Save relative path
     user.avatar = `/uploads/${req.file.filename}`;
     await user.save();
 
+    // ✅ Ensure base URL works on both localhost & Render
     const baseUrl =
-      process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+      process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
 
     res.json({
       message: "Avatar updated successfully",
@@ -211,7 +212,7 @@ const updateAvatar = async (req, res) => {
         id: user._id,
         fullName: user.fullName,
         email: user.email,
-        avatar: user.avatar ? `${baseUrl}${user.avatar.replace(/\\/g, "/")}` : null,
+        avatar: `${baseUrl}${user.avatar.replace(/\\/g, "/")}`,
       },
     });
   } catch (error) {
@@ -220,7 +221,7 @@ const updateAvatar = async (req, res) => {
   }
 };
 
-// Get Settings
+// ================== GET SETTINGS ==================
 const getSettings = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("settings");
@@ -237,7 +238,7 @@ const getSettings = async (req, res) => {
   }
 };
 
-// Update Settings
+// ================== UPDATE SETTINGS ==================
 const updateSettings = async (req, res) => {
   try {
     const {

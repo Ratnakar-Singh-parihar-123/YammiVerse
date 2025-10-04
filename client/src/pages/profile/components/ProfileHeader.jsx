@@ -7,7 +7,7 @@ const ProfileHeader = ({ user, onImageChange }) => {
   const [isImageHovered, setIsImageHovered] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // ✅ Token fix (localStorage ya sessionStorage dono check karega)
+  // ✅ Token fix (localStorage + sessionStorage check)
   const token =
     localStorage.getItem("recipeHub-token") ||
     sessionStorage.getItem("recipeHub-token");
@@ -28,13 +28,13 @@ const ProfileHeader = ({ user, onImageChange }) => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            // Content-Type set mat karo, Axios khud karega
+            // ❌ Content-Type mat do, Axios khud set karega
           },
         }
       );
 
       if (res.data?.user?.avatar) {
-        onImageChange(res.data.user.avatar); // parent ko update karo
+        onImageChange(res.data.user.avatar); // ✅ parent ko update karo
       }
       alert("✅ Profile picture updated!");
     } catch (error) {
@@ -45,7 +45,7 @@ const ProfileHeader = ({ user, onImageChange }) => {
     }
   };
 
-  // ✅ Avatar URL normalize
+  // ✅ Avatar URL normalize (backend path → full URL)
   let avatarUrl = user?.avatar
     ? user?.avatar.startsWith("http")
       ? user.avatar
