@@ -14,18 +14,18 @@ connectDb();
 // ✅ Middlewares
 app.use(express.json());
 
-// ✅ Allowed Origins (frontend ka URL yaha add karo)
+// ✅ Allowed Origins
 const allowedOrigins = [
-  "http://localhost:3000",     // React default
-  "http://localhost:5173",     // Vite default
-  "https://yammiverse.onrender.com" // Deployed frontend
+  "http://localhost:3000",    // React default
+  "http://localhost:5173",    // Vite default
+  "https://yammiverse.onrender.com" // Your deployed frontend
 ];
 
 // ✅ CORS Config
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // Postman, curl etc.
+      if (!origin) return callback(null, true); // Postman, curl
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
@@ -36,13 +36,13 @@ app.use(
   })
 );
 
-// ✅ Debug origin (sirf development me)
+// ✅ Debug origin (optional, remove in production)
 app.use((req, res, next) => {
   console.log("Request Origin:", req.headers.origin);
   next();
 });
 
-// ✅ Serve static uploads (avatar/images)
+// ✅ Static files (uploads for avatars/images)
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 app.use(express.static("public"));
 
@@ -52,12 +52,13 @@ app.use("/api/recipes", require("./routes/recipe"));
 app.use("/api/favorites", require("./routes/favorite"));
 
 // -------------------------
-// ✅ Serve React frontend (only if bundled together)
+// ✅ React frontend serve
 // -------------------------
-const frontendPath = path.join(__dirname, "../client/build"); // CRA build
+const frontendPath = path.join(__dirname, "../client/build"); // CRA -> build | Vite -> dist
 app.use(express.static(frontendPath));
 
-app.get("*", (req, res, next) => {
+// ✅ Fix: Express v5 requires "/*" instead of "*"
+app.get("/*", (req, res, next) => {
   if (req.method === "GET" && !req.path.startsWith("/api")) {
     res.sendFile(path.resolve(frontendPath, "index.html"));
   } else {
