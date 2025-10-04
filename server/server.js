@@ -5,7 +5,6 @@ const path = require("path");
 const connectDb = require("./config/connectionDb");
 
 dotenv.config();
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -15,14 +14,13 @@ connectDb();
 // ✅ Middlewares
 app.use(express.json());
 
-// ✅ Allowed Origins
+// ✅ CORS (sirf apne hi domain + localhost allow karo)
 const allowedOrigins = [
-  "http://localhost:3000",      // React default
-  "http://localhost:5173",      // Vite default
-  "https://yammiverse.onrender.com" // Your deployed frontend
+  "http://localhost:3000",   // React local
+  "http://localhost:5173",   // Vite local
+  "https://yammiverse.onrender.com"   // Render pe deployed domain
 ];
 
-// ✅ CORS Config
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -37,13 +35,13 @@ app.use(
   })
 );
 
-// ✅ Debug origin (optional, remove in production)
+// ✅ Debug origin (sirf dev ke liye)
 app.use((req, res, next) => {
   console.log("Request Origin:", req.headers.origin);
   next();
 });
 
-// ✅ Static files
+// ✅ Static files (avatars, images)
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 app.use(express.static("public"));
 
@@ -52,16 +50,13 @@ app.use("/api/users", require("./routes/user"));
 app.use("/api/recipes", require("./routes/recipe"));
 app.use("/api/favorites", require("./routes/favorite"));
 
-// -------------------------
-// ✅ React frontend serve
-// -------------------------
-const frontendPath = path.join(__dirname, "../client/build"); // CRA -> build | Vite -> dist
+// ✅ Serve React frontend (ek hi app me deploy case)
+const frontendPath = path.join(__dirname, "../client/build"); // CRA ke liye build
 app.use(express.static(frontendPath));
-app.use((req, res, next) => {
-  if (req.method === "GET" && !req.path.startsWith("/api")) {
+
+app.get("*", (req, res) => {
+  if (!req.path.startsWith("/api")) {
     res.sendFile(path.resolve(frontendPath, "index.html"));
-  } else {
-    next();
   }
 });
 
