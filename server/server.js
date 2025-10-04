@@ -16,8 +16,8 @@ app.use(express.json());
 
 // ✅ Allowed Origins
 const allowedOrigins = [
-  "http://localhost:3000",   // React default
-  "http://localhost:5173",   // Vite default
+  "http://localhost:3000",     // React default
+  "http://localhost:5173",     // Vite default
   "https://yammiverse.onrender.com" // Your deployed frontend
 ];
 
@@ -57,12 +57,9 @@ app.use("/api/favorites", require("./routes/favorite"));
 const frontendPath = path.join(__dirname, "../client/build"); // CRA -> build | Vite -> dist
 app.use(express.static(frontendPath));
 
-app.get("*", (req, res, next) => {
-  if (!req.path.startsWith("/api") && !req.path.startsWith("/uploads")) {
-    res.sendFile(path.resolve(frontendPath, "index.html"));
-  } else {
-    next();
-  }
+// ✅ Regex fix (Express v5 compatible) — handle all non-API routes
+app.get(/^\/(?!api|uploads).*/, (req, res) => {
+  res.sendFile(path.resolve(frontendPath, "index.html"));
 });
 
 // ✅ Error handler
