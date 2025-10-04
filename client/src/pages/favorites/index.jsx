@@ -15,7 +15,7 @@ const FavoritesPage = () => {
 
   const token = localStorage.getItem("recipeHub-token");
 
-  // 🔹 Fetch favorites from backend
+  //  Fetch favorites from backend
   useEffect(() => {
     const fetchFavorites = async () => {
       try {
@@ -33,12 +33,13 @@ const FavoritesPage = () => {
     if (token) fetchFavorites();
   }, [token]);
 
-  // 🔹 Toggle Favorite (Remove from list)
+  //  Toggle Favorite (Remove from list)
   const handleToggleFavorite = async (recipeId) => {
     try {
       await axios.delete(`https://yammiverse.onrender.com/api/favorites/${recipeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      // Remove from local state
       setFavoriteRecipes((prev) =>
         prev?.filter((recipe) => recipe?._id !== recipeId)
       );
@@ -47,16 +48,18 @@ const FavoritesPage = () => {
     }
   };
 
-  // 🔹 Filter + Sort Recipes
+  //  Filter + Sort Recipes
   const filteredAndSortedRecipes = useMemo(() => {
     let filtered = favoriteRecipes;
 
-    // 🔍 Search filter
+    // 🔍 Search filter (title + description + category)
     if (searchQuery?.trim()) {
       filtered = filtered?.filter(
         (recipe) =>
           recipe?.title?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
-          recipe?.description?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
+          recipe?.description
+            ?.toLowerCase()
+            ?.includes(searchQuery.toLowerCase()) ||
           recipe?.category?.toLowerCase()?.includes(searchQuery.toLowerCase())
       );
     }
@@ -64,14 +67,17 @@ const FavoritesPage = () => {
     // 🎯 Custom filter
     if (filterBy !== "all") {
       filtered = filtered?.filter((recipe) => {
-        const cookingTime = parseInt(recipe?.time); // ✅ fixed
+        const cookingTime = parseInt(recipe?.cookingTime);
+
         switch (filterBy) {
           case "quick30":
             return !isNaN(cookingTime) && cookingTime <= 30;
+
           case "easy":
           case "medium":
           case "hard":
             return recipe?.difficulty?.toLowerCase() === filterBy;
+
           case "breakfast":
           case "lunch":
           case "dinner":
@@ -82,6 +88,7 @@ const FavoritesPage = () => {
           case "dessert":
           case "beverage":
             return recipe?.category?.toLowerCase() === filterBy;
+
           default:
             return true;
         }
@@ -93,14 +100,17 @@ const FavoritesPage = () => {
       switch (sortBy) {
         case "alphabetical":
           return a?.title?.localeCompare(b?.title);
+
         case "cookingTime":
-          return parseInt(a?.time) - parseInt(b?.time); // ✅ fixed
+          return parseInt(a?.cookingTime) - parseInt(b?.cookingTime);
+
         case "difficulty":
           const difficultyOrder = { easy: 1, medium: 2, hard: 3 };
           return (
             (difficultyOrder?.[a?.difficulty?.toLowerCase()] || 99) -
             (difficultyOrder?.[b?.difficulty?.toLowerCase()] || 99)
           );
+
         case "recent":
         default:
           return new Date(b?.createdAt) - new Date(a?.createdAt);

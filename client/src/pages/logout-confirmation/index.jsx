@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   LogOut,
   User,
-  AlertTriangle,
+  Mail,
+  Lock,
   Eye,
   EyeOff,
+  ChefHat,
+  AlertTriangle,
 } from "lucide-react";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
@@ -24,7 +27,7 @@ const LogoutConfirmation = () => {
 
   const token = localStorage.getItem("recipeHub-token");
 
-  // 🔹 Fetch current user
+  //  Fetch current user from backend
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -47,7 +50,7 @@ const LogoutConfirmation = () => {
     }
   };
 
-  // 🔹 Logout API
+  //  Logout API
   const handleLogout = async () => {
     setLogoutLoading(true);
     try {
@@ -69,14 +72,14 @@ const LogoutConfirmation = () => {
     navigate("/home");
   };
 
-  // 🔹 Quick login
+  //  Quick login (backend API)
   const handleQuickLogin = async (e) => {
     e?.preventDefault();
     if (!quickLoginData?.email || !quickLoginData?.password) return;
 
     setLoading(true);
     try {
-      const res = await axios.post("https://yammiverse.onrender.com/api/users/login", {
+      const res = await axios.post("https://yammiverse.onrender.com/api/auth/login", {
         email: quickLoginData.email,
         password: quickLoginData.password,
       });
@@ -96,6 +99,7 @@ const LogoutConfirmation = () => {
       <div className="relative w-full max-w-md space-y-6">
         {/* Logout Confirmation */}
         <div className="bg-card border border-border rounded-2xl shadow-warm-lg p-8">
+          {/* Theme Toggle */}
           <div className="absolute top-4 right-4">
             <ThemeToggle />
           </div>
@@ -107,13 +111,15 @@ const LogoutConfirmation = () => {
                 <LogOut className="h-6 w-6 text-destructive" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-foreground mb-2">Confirm Logout</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-2">
+              Confirm Logout
+            </h1>
             <p className="text-muted-foreground">
               Are you sure you want to sign out of your account?
             </p>
           </div>
 
-          {/* Current User Info */}
+          {/* Current User */}
           {currentUser && (
             <div className="bg-muted/30 border border-border rounded-lg p-4 mb-6">
               <div className="flex items-center gap-3">
@@ -121,8 +127,12 @@ const LogoutConfirmation = () => {
                   <User className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">{currentUser?.fullName}</p>
-                  <p className="text-sm text-muted-foreground">{currentUser?.email}</p>
+                  <p className="font-medium text-foreground">
+                    {currentUser?.fullName}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {currentUser?.email}
+                  </p>
                 </div>
               </div>
             </div>
@@ -133,9 +143,12 @@ const LogoutConfirmation = () => {
             <div className="flex items-start gap-3">
               <AlertTriangle className="h-5 w-5 text-warning mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-warning mb-1">You will be signed out</p>
+                <p className="text-sm font-medium text-warning mb-1">
+                  You will be signed out
+                </p>
                 <p className="text-sm text-muted-foreground">
-                  Your preferences and favorites will be saved, but you’ll need to sign in again.
+                  Your preferences and favorites will be saved, but you’ll need
+                  to sign in again to access them.
                 </p>
               </div>
             </div>
@@ -152,6 +165,7 @@ const LogoutConfirmation = () => {
             >
               {logoutLoading ? "Signing Out..." : "Yes, Sign Me Out"}
             </Button>
+
             <Button
               fullWidth
               variant="outline"
@@ -174,7 +188,7 @@ const LogoutConfirmation = () => {
           </div>
         </div>
 
-        {/* Quick Login Form */}
+        {/* Quick Login */}
         {showQuickLogin && (
           <div className="bg-card border border-border rounded-2xl shadow-warm-lg p-8 animate-in slide-in-from-bottom-2 duration-300">
             <form onSubmit={handleQuickLogin} className="space-y-4">
@@ -182,32 +196,27 @@ const LogoutConfirmation = () => {
                 type="email"
                 placeholder="Enter your email"
                 value={quickLoginData?.email}
-                onChange={(e) => handleInputChange("email", e?.target?.value)}
+                onChange={(e) =>
+                  handleInputChange("email", e?.target?.value)
+                }
                 error={errors?.email}
                 required
               />
-              <div className="relative">
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  value={quickLoginData?.password}
-                  onChange={(e) => handleInputChange("password", e?.target?.value)}
-                  error={errors?.password}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                value={quickLoginData?.password}
+                onChange={(e) =>
+                  handleInputChange("password", e?.target?.value)
+                }
+                error={errors?.password}
+                required
+              />
               {errors?.submit && (
-                <div className="text-sm text-destructive text-center">{errors?.submit}</div>
+                <div className="text-sm text-destructive text-center">
+                  {errors?.submit}
+                </div>
               )}
-
               <Button type="submit" fullWidth loading={loading} className="h-12">
                 {loading ? "Signing In..." : "Sign In"}
               </Button>

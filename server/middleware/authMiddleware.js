@@ -5,6 +5,7 @@ const User = require("../models/user");
 const authMiddleware = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({ message: "No token, authorization denied" });
     }
@@ -17,9 +18,7 @@ const authMiddleware = async (req, res, next) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // ✅ Sirf id attach karenge (baaki details zarurat pe query kar lena)
-    req.user = { id: user._id.toString() };
-
+    req.user = user; // ✅ attach user to request
     next();
   } catch (error) {
     console.error("Auth Error:", error.message);

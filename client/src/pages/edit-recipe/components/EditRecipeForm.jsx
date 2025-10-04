@@ -8,15 +8,14 @@ import InstructionsEditor from './InstructionsEditor';
 
 const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
   const navigate = useNavigate();
-
   const [formData, setFormData] = useState({
     title: '',
-    time: '',   // ✅ fixed: was cookingTime
+    cookingTime: '',
     servings: '',
     difficulty: 'medium',
     category: '',
     description: '',
-    image: null,
+    image: null, // File ya URL dono ho sakta hai
   });
 
   const [ingredients, setIngredients] = useState([]);
@@ -25,12 +24,12 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Load recipe data
+  //  Load recipe data
   useEffect(() => {
     if (recipeData) {
       setFormData({
         title: recipeData?.title || '',
-        time: recipeData?.time || '',   // ✅ fixed
+        cookingTime: recipeData?.cookingTime || '',
         servings: recipeData?.servings || '',
         difficulty: recipeData?.difficulty || 'medium',
         category: recipeData?.category || '',
@@ -47,7 +46,7 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
     setHasUnsavedChanges(true);
   }, [formData, ingredients, instructions]);
 
-  // Handle Input Change
+  //  Handle Input Change
   const handleInputChange = (e) => {
     const { name, value } = e?.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -56,18 +55,22 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
     }
   };
 
-  // Handle Image Change
+  //  Handle Image Change
   const handleImageChange = (fileOrUrl) => {
     setFormData((prev) => ({ ...prev, image: fileOrUrl }));
   };
 
-  // Validation
+  //  Validation
   const validateForm = () => {
     const newErrors = {};
+
     if (!formData?.title?.trim()) newErrors.title = 'Recipe title is required';
-    if (!formData?.time?.trim()) newErrors.time = 'Cooking time is required'; // ✅ fixed
+    if (!formData?.cookingTime?.trim())
+      newErrors.cookingTime = 'Cooking time is required';
+
     if (!String(formData?.servings || '').trim())
       newErrors.servings = 'Number of servings is required';
+
     if (!formData?.category?.trim())
       newErrors.category = 'Recipe category is required';
 
@@ -85,21 +88,22 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Submit Handler
+  //  Submit Handler
   const handleSubmit = async (e) => {
     e?.preventDefault();
     if (!validateForm()) return;
-
     setIsSubmitting(true);
+
     try {
       const recipeId = recipeData?._id || recipeData?.id;
       if (!recipeId) {
+        console.error('⚠️ RecipeData missing ID:', recipeData);
         throw new Error('Recipe ID is missing, cannot update.');
       }
 
       const data = new FormData();
       data.append('title', formData.title);
-      data.append('time', formData.time);   // ✅ fixed
+      data.append('cookingTime', formData.cookingTime);
       data.append('servings', formData.servings);
       data.append('difficulty', formData.difficulty);
       data.append('category', formData.category);
@@ -107,7 +111,7 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
       data.append('ingredients', JSON.stringify(ingredients));
       data.append('instructions', JSON.stringify(instructions));
 
-      // Image
+      //  Image handle
       if (formData.image && formData.image instanceof File) {
         data.append('image', formData.image);
       } else if (typeof formData.image === 'string') {
@@ -139,7 +143,7 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
     }
   };
 
-  // Cancel
+  //  Cancel
   const handleCancel = () => {
     if (hasUnsavedChanges) {
       const confirmLeave = window.confirm(
@@ -163,6 +167,7 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
         <h2 className="text-xl font-heading font-semibold text-foreground">
           Basic Information
         </h2>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Input
             label="Recipe Title"
@@ -181,13 +186,14 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
             required
           />
         </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Input
             label="Cooking Time"
-            name="time"   // ✅ fixed
-            value={formData.time}
+            name="cookingTime"
+            value={formData.cookingTime}
             onChange={handleInputChange}
-            error={errors.time}
+            error={errors.cookingTime}
             required
           />
           <Input
@@ -215,6 +221,7 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
             </select>
           </div>
         </div>
+
         <textarea
           name="description"
           value={formData.description}

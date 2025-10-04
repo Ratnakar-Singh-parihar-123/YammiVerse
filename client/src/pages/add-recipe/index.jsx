@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-
 import TopNavigation from "../../components/ui/TopNavigation";
 import Input from "../../components/ui/Input";
 import RecipeImageUpload from "./components/RecipeImageUpload";
@@ -10,21 +9,15 @@ import InstructionsSection from "./components/InstructionsSection";
 import RecipeFormActions from "./components/RecipeFormActions";
 import Icon from "../../components/AppIcon";
 
-// ✅ Auto API Base URL
-const API_BASE =
-  window.location.hostname === "localhost"
-    ? "http://localhost:5000"
-    : "https://yammiverse.onrender.com";
-
 const AddRecipe = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // 🔹 Form state
+  //  Form state (cookingTime → time)
   const [formData, setFormData] = useState({
     title: "",
-    cookingTime: "",
+    time: "", //  fixed field
     servings: "",
     difficulty: "medium",
     category: "",
@@ -38,14 +31,13 @@ const AddRecipe = () => {
   const [instructions, setInstructions] = useState([
     { id: 1, step: 1, text: "" },
   ]);
-
   const [errors, setErrors] = useState({});
 
-  // 🔹 Track unsaved changes
+  //  Track unsaved changes
   useEffect(() => {
     const hasChanges =
       formData?.title?.trim() !== "" ||
-      formData?.cookingTime?.trim() !== "" ||
+      formData?.time?.trim() !== "" ||
       formData?.servings?.trim() !== "" ||
       formData?.category?.trim() !== "" ||
       formData?.description?.trim() !== "" ||
@@ -57,11 +49,10 @@ const AddRecipe = () => {
           ing?.unit?.trim() !== ""
       ) ||
       instructions?.some((inst) => inst?.text?.trim() !== "");
-
     setHasUnsavedChanges(hasChanges);
   }, [formData, ingredients, instructions]);
 
-  // 🔹 Input handler
+  //  Input handler
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors?.[field]) {
@@ -69,13 +60,11 @@ const AddRecipe = () => {
     }
   };
 
-  // 🔹 Validation
+  //  Validation
   const validateForm = () => {
     const newErrors = {};
-
     if (!formData?.title?.trim()) newErrors.title = "Recipe title is required";
-    if (!formData?.cookingTime?.trim())
-      newErrors.cookingTime = "Cooking time is required";
+    if (!formData?.time?.trim()) newErrors.time = "Cooking time is required";
     if (!formData?.servings?.trim())
       newErrors.servings = "Number of servings is required";
     if (!formData?.category?.trim())
@@ -93,17 +82,15 @@ const AddRecipe = () => {
     if (validInstructions.length === 0)
       newErrors.instructions = "At least one instruction step is required";
 
-    // Cooking time format check
     if (
-      formData?.cookingTime?.trim() &&
+      formData?.time?.trim() &&
       !/^\d+\s*(min|mins|minutes?|hr|hrs|hours?|h)$/i.test(
-        formData?.cookingTime?.trim()
+        formData?.time?.trim()
       )
     ) {
-      newErrors.cookingTime = 'Please use format like "30 mins" or "1 hour"';
+      newErrors.time = 'Please use format like "30 mins" or "1 hour"';
     }
 
-    // Servings check
     if (
       formData?.servings?.trim() &&
       (isNaN(formData?.servings) || parseInt(formData?.servings) < 1)
@@ -115,11 +102,10 @@ const AddRecipe = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // 🔹 Save handler
+  //  Save handler
   const handleSave = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
     setIsLoading(true);
 
     try {
@@ -132,14 +118,14 @@ const AddRecipe = () => {
 
       const formDataToSend = new FormData();
       formDataToSend.append("title", formData.title);
-      formDataToSend.append("cookingTime", formData.cookingTime);
+      formDataToSend.append("time", formData.time); //  fixed
       formDataToSend.append("servings", formData.servings);
       formDataToSend.append("difficulty", formData.difficulty);
       formDataToSend.append("category", formData.category);
       formDataToSend.append("description", formData.description);
 
       if (formData.image instanceof File) {
-        formDataToSend.append("image", formData.image);
+        formDataToSend.append("image", formData.image); //  backend route expects "image"
       }
 
       formDataToSend.append("ingredients", JSON.stringify(validIngredients));
@@ -149,7 +135,7 @@ const AddRecipe = () => {
         localStorage.getItem("recipeHub-token") ||
         sessionStorage.getItem("recipeHub-token");
 
-      await axios.post(`${API_BASE}/api/recipes`, formDataToSend, {
+      await axios.post("https://yammiverse.onrender.com/api/recipes", formDataToSend, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
@@ -158,7 +144,7 @@ const AddRecipe = () => {
 
       navigate("/home", { state: { message: "Recipe created successfully!" } });
     } catch (error) {
-      console.error("❌ Error saving recipe:", error);
+      console.error("Error saving recipe:", error);
       setErrors({
         submit:
           error.response?.data?.message ||
@@ -169,7 +155,7 @@ const AddRecipe = () => {
     }
   };
 
-  // 🔹 Options
+  //  Options
   const difficultyOptions = [
     { value: "easy", label: "Easy" },
     { value: "medium", label: "Medium" },
@@ -213,12 +199,13 @@ const AddRecipe = () => {
 
         {/* Form */}
         <form onSubmit={handleSave} className="space-y-8">
-          {/* Basic Info */}
+          {/* Basic Information */}
           <div className="bg-card rounded-lg border border-border p-6 space-y-6">
             <h2 className="text-xl font-heading font-semibold text-foreground flex items-center space-x-2">
               <Icon name="Info" size={20} />
               <span>Basic Information</span>
             </h2>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
                 <Input
@@ -226,24 +213,23 @@ const AddRecipe = () => {
                   type="text"
                   placeholder="e.g., Grandma's Chocolate Chip Cookies"
                   value={formData?.title}
-                  onChange={(e) =>
-                    handleInputChange("title", e?.target?.value)
-                  }
+                  onChange={(e) => handleInputChange("title", e?.target?.value)}
                   error={errors?.title}
                   required
                 />
               </div>
+
               <Input
                 label="Cooking Time"
                 type="text"
                 placeholder="e.g., 45 mins"
-                value={formData?.cookingTime}
-                onChange={(e) =>
-                  handleInputChange("cookingTime", e?.target?.value)
-                }
-                error={errors?.cookingTime}
+                value={formData?.time} //  fixed
+                onChange={(e) => handleInputChange("time", e?.target?.value)}
+                error={errors?.time}
+                description="Include prep and cook time"
                 required
               />
+
               <Input
                 label="Servings"
                 type="number"
@@ -256,6 +242,7 @@ const AddRecipe = () => {
                 min="1"
                 required
               />
+
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Difficulty Level *
@@ -274,6 +261,7 @@ const AddRecipe = () => {
                   ))}
                 </select>
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Category *
@@ -298,6 +286,7 @@ const AddRecipe = () => {
                   </p>
                 )}
               </div>
+
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Description
@@ -354,7 +343,7 @@ const AddRecipe = () => {
             />
           </div>
 
-          {/* Actions */}
+          {/* Form Actions */}
           <div className="bg-card rounded-lg border border-border p-6">
             {errors?.submit && (
               <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">

@@ -10,12 +10,11 @@ const ProfileForm = ({ user, onSave, onCancel }) => {
     location: user?.location || "",
     website: user?.website || "",
   });
-
   const [errors, setErrors] = useState({});
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // 🔄 Sync parent user changes
+  // 🔄 Sync when parent updates user
   useEffect(() => {
     setFormData({
       fullName: user?.fullName || "",
@@ -25,52 +24,38 @@ const ProfileForm = ({ user, onSave, onCancel }) => {
       website: user?.website || "",
     });
     setHasChanges(false);
-    setErrors({});
   }, [user]);
 
-  // 📌 Input Handler
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value || "",
     }));
     setHasChanges(true);
-
-    // clear specific error
     if (errors?.[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
-  // 📌 Validation
   const validateForm = () => {
     const newErrors = {};
-
     if (!formData?.fullName?.trim()) {
       newErrors.fullName = "Full name is required";
     }
-
     if (!formData?.email?.trim()) {
       newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData?.email)) {
       newErrors.email = "Please enter a valid email address";
     }
-
-    if (formData?.website?.trim() && !/^https?:\/\//i.test(formData.website)) {
-      newErrors.website = "Website must start with http:// or https://";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // 📌 Save
   const handleSave = async () => {
     if (!validateForm()) return;
-
     setIsSaving(true);
     try {
-      await onSave?.(formData); // 🔥 parent function → backend update
+      await onSave?.(formData); // 🔥 Parent call karega backend
       setHasChanges(false);
     } catch (error) {
       console.error("❌ Error saving profile:", error);
@@ -80,7 +65,6 @@ const ProfileForm = ({ user, onSave, onCancel }) => {
     }
   };
 
-  // 📌 Cancel
   const handleCancel = () => {
     if (hasChanges) {
       const confirmCancel = window.confirm(
@@ -101,13 +85,11 @@ const ProfileForm = ({ user, onSave, onCancel }) => {
   };
 
   return (
-    <div className="bg-card rounded-lg p-6 shadow-lg border border-border">
+    <div className="bg-card rounded-lg p-6 shadow-warm">
       <h2 className="text-xl font-heading font-semibold text-foreground mb-6">
         Personal Information
       </h2>
-
       <div className="space-y-6">
-        {/* Full Name */}
         <Input
           label="Full Name"
           type="text"
@@ -117,8 +99,6 @@ const ProfileForm = ({ user, onSave, onCancel }) => {
           required
           placeholder="Enter your full name"
         />
-
-        {/* Email */}
         <Input
           label="Email Address"
           type="email"
@@ -128,8 +108,6 @@ const ProfileForm = ({ user, onSave, onCancel }) => {
           required
           placeholder="Enter your email address"
         />
-
-        {/* Bio */}
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
             Bio
@@ -142,8 +120,6 @@ const ProfileForm = ({ user, onSave, onCancel }) => {
             className="w-full px-3 py-2 border border-border rounded-md bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-none"
           />
         </div>
-
-        {/* Location */}
         <Input
           label="Location"
           type="text"
@@ -151,18 +127,14 @@ const ProfileForm = ({ user, onSave, onCancel }) => {
           onChange={(e) => handleInputChange("location", e?.target?.value)}
           placeholder="City, Country"
         />
-
-        {/* Website */}
         <Input
           label="Website"
           type="url"
           value={formData?.website || ""}
           onChange={(e) => handleInputChange("website", e?.target?.value)}
-          error={errors?.website}
           placeholder="https://your-website.com"
         />
 
-        {/* Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 pt-4">
           <Button
             variant="default"
@@ -175,7 +147,6 @@ const ProfileForm = ({ user, onSave, onCancel }) => {
           >
             Save Changes
           </Button>
-
           <Button
             variant="outline"
             onClick={handleCancel}

@@ -10,7 +10,7 @@ const FavoriteRecipeCard = ({ recipe, onToggleFavorite }) => {
     onToggleFavorite(recipe?._id);
   };
 
-  // 🔹 Normalize Image URL
+  //  Normalize Image URL
   let imageUrl = recipe?.coverImage || recipe?.image;
   if (imageUrl && !imageUrl.startsWith("http")) {
     imageUrl = `https://yammiverse.onrender.com/${imageUrl.replace(/\\/g, "/")}`;
@@ -21,8 +21,8 @@ const FavoriteRecipeCard = ({ recipe, onToggleFavorite }) => {
 
   return (
     <div className="bg-card rounded-lg shadow-warm hover:shadow-warm-md transition-state group">
+      {/*  FIXED: correct route param */}
       <Link to={`/recipes/${recipe?._id}`} className="block">
-        {/* Image */}
         <div className="relative overflow-hidden rounded-t-lg h-48">
           <Image
             src={imageUrl}
@@ -44,12 +44,12 @@ const FavoriteRecipeCard = ({ recipe, onToggleFavorite }) => {
           </button>
 
           {/* ⏱ Cooking Time */}
-          {recipe?.time && (   // ✅ fixed field name
+          {recipe?.cookingTime && (
             <div className="absolute bottom-3 left-3 bg-background/90 backdrop-blur-sm px-2 py-1 rounded-md">
               <div className="flex items-center space-x-1">
                 <Icon name="Clock" size={14} className="text-muted-foreground" />
                 <span className="text-sm font-medium text-foreground">
-                  {recipe?.time}
+                  {recipe?.cookingTime}
                 </span>
               </div>
             </div>
