@@ -2,10 +2,12 @@ const Recipes = require("../models/recipe");
 const multer = require("multer");
 const path = require("path");
 
+
 // Multer storage config
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "./public/uploads"); // 🔹 uploads folder use karo (server.js me configured hai)
+    cb(null, "./public/images");
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase();
@@ -25,7 +27,9 @@ const upload = multer({
   },
 });
 
+
 // Get all recipes
+
 const getRecipes = async (req, res) => {
   try {
     const recipes = await Recipes.find().populate("createdBy", "fullName email avatar");
@@ -35,7 +39,9 @@ const getRecipes = async (req, res) => {
   }
 };
 
+
 // Get recipe by ID
+
 const getRecipe = async (req, res) => {
   try {
     const recipe = await Recipes.findById(req.params.id).populate("createdBy", "fullName email avatar");
@@ -46,46 +52,52 @@ const getRecipe = async (req, res) => {
   }
 };
 
+
 // Add new recipe
+
 const addRecipe = async (req, res) => {
   try {
-    const { title, ingredients, instructions, time, servings, difficulty, category, description } = req.body;
+    const {
+      title,
+      ingredients,
+      instructions,
+      time,   
+      servings,
+      difficulty,
+      category,
+      description,
+    } = req.body;
 
     if (!title || !ingredients || !instructions) {
       return res.status(400).json({ message: "Title, ingredients and instructions are required" });
     }
 
-    // Parse safely
-    let parsedIngredients, parsedInstructions;
-    try {
-      parsedIngredients = typeof ingredients === "string" ? JSON.parse(ingredients) : ingredients;
-      parsedInstructions = typeof instructions === "string" ? JSON.parse(instructions) : instructions;
-    } catch (err) {
-      return res.status(400).json({ message: "Invalid ingredients or instructions format" });
-    }
+    const parsedIngredients = typeof ingredients === "string" ? JSON.parse(ingredients) : ingredients;
+    const parsedInstructions = typeof instructions === "string" ? JSON.parse(instructions) : instructions;
 
     const newRecipe = await Recipes.create({
       title,
       ingredients: parsedIngredients,
       instructions: parsedInstructions,
-      time,
+      time,   // ✅ fixed
       servings,
       difficulty,
       category,
       description,
-      // 🔹 Correct path (uploads folder)
-      coverImage: req.file ? `/uploads/${req.file.filename}` : "",
+      coverImage: req.file ? `/images/${req.file.filename}` : "",
       createdBy: req.user?.id || null,
     });
 
     res.status(201).json({ message: "Recipe added successfully", recipe: newRecipe });
   } catch (error) {
-    console.error("❌ Error adding recipe:", error);
+    console.error("Error adding recipe:", error);
     res.status(500).json({ message: "Failed to add recipe", error: error.message });
   }
 };
 
+
 // Edit recipe
+
 const editRecipe = async (req, res) => {
   try {
     const recipe = await Recipes.findById(req.params.id);
@@ -95,28 +107,21 @@ const editRecipe = async (req, res) => {
       return res.status(403).json({ message: "Not authorized to edit this recipe" });
     }
 
-    // Safe parse
-    let parsedIngredients = recipe.ingredients;
-    let parsedInstructions = recipe.instructions;
+    const parsedIngredients = req.body.ingredients
+      ? typeof req.body.ingredients === "string"
+        ? JSON.parse(req.body.ingredients)
+        : req.body.ingredients
+      : recipe.ingredients;
 
-    try {
-      if (req.body.ingredients) {
-        parsedIngredients = typeof req.body.ingredients === "string"
-          ? JSON.parse(req.body.ingredients)
-          : req.body.ingredients;
-      }
-      if (req.body.instructions) {
-        parsedInstructions = typeof req.body.instructions === "string"
-          ? JSON.parse(req.body.instructions)
-          : req.body.instructions;
-      }
-    } catch (err) {
-      return res.status(400).json({ message: "Invalid JSON in ingredients/instructions" });
-    }
+    const parsedInstructions = req.body.instructions
+      ? typeof req.body.instructions === "string"
+        ? JSON.parse(req.body.instructions)
+        : req.body.instructions
+      : recipe.instructions;
 
     let coverImage = recipe.coverImage;
     if (req.file) {
-      coverImage = `/uploads/${req.file.filename}`;
+      coverImage = `/images/${req.file.filename}`;
     } else if (req.body.coverImage) {
       coverImage = req.body.coverImage;
     }
@@ -127,7 +132,7 @@ const editRecipe = async (req, res) => {
         title: req.body.title || recipe.title,
         ingredients: parsedIngredients,
         instructions: parsedInstructions,
-        time: req.body.time || recipe.time,
+        time: req.body.time || recipe.time,   // ✅ fixed
         servings: req.body.servings || recipe.servings,
         difficulty: req.body.difficulty || recipe.difficulty,
         category: req.body.category || recipe.category,
@@ -143,7 +148,9 @@ const editRecipe = async (req, res) => {
   }
 };
 
+
 // Delete recipe
+
 const deleteRecipe = async (req, res) => {
   try {
     const recipe = await Recipes.findById(req.params.id);
