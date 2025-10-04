@@ -5,6 +5,7 @@ const path = require("path");
 const connectDb = require("./config/connectionDb");
 
 dotenv.config();
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -14,22 +15,33 @@ connectDb();
 // ✅ Middlewares
 app.use(express.json());
 
+// ✅ Allowed Origins
+const allowedOrigins = [
+  "http://localhost:3000",      // React default
+  "http://localhost:5173",      // Vite default
+  "https://yammiverse.onrender.com" // Your deployed frontend
+];
+
+// ✅ CORS Config
 app.use(
   cors({
-    origin: (origin, callback) => {
+    origin: function (origin, callback) {
       if (!origin) return callback(null, true); // Postman, curl
-      if (
-        origin === "http://localhost:3000" ||
-        origin === "http://localhost:5173" ||
-        origin === "https://yammiverse.onrender.com"
-      ) {
+      if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
+      console.log("❌ Blocked by CORS:", origin);
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
 );
+
+// ✅ Debug origin (optional, remove in production)
+app.use((req, res, next) => {
+  console.log("Request Origin:", req.headers.origin);
+  next();
+});
 
 // ✅ Static files
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
@@ -43,10 +55,8 @@ app.use("/api/favorites", require("./routes/favorite"));
 // -------------------------
 // ✅ React frontend serve
 // -------------------------
-const frontendPath = path.join(__dirname, "../client/build"); // 👈 Vite build (dist) | CRA ho to build likho
-
+const frontendPath = path.join(__dirname, "../client/build"); // CRA -> build | Vite -> dist
 app.use(express.static(frontendPath));
-
 app.use((req, res, next) => {
   if (req.method === "GET" && !req.path.startsWith("/api")) {
     res.sendFile(path.resolve(frontendPath, "index.html"));
@@ -57,7 +67,7 @@ app.use((req, res, next) => {
 
 // ✅ Error handler
 app.use((err, req, res, next) => {
-  console.error("🔥 Error: ", err.message);
+  console.error("🔥 Error:", err.message);
   res.status(500).json({ message: "Something went wrong!", error: err.message });
 });
 

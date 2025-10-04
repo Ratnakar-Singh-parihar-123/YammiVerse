@@ -9,15 +9,21 @@ import InstructionsSection from "./components/InstructionsSection";
 import RecipeFormActions from "./components/RecipeFormActions";
 import Icon from "../../components/AppIcon";
 
+// ✅ Auto API Base URL (local vs deployed)
+const API_BASE =
+  window.location.hostname === "localhost"
+    ? "http://localhost:5000"
+    : "https://yammiverse.onrender.com";
+
 const AddRecipe = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  //  Form state (cookingTime → time)
+  // 🔹 Form state
   const [formData, setFormData] = useState({
     title: "",
-    time: "", //  fixed field
+    time: "",
     servings: "",
     difficulty: "medium",
     category: "",
@@ -28,12 +34,14 @@ const AddRecipe = () => {
   const [ingredients, setIngredients] = useState([
     { id: 1, name: "", quantity: "", unit: "" },
   ]);
+
   const [instructions, setInstructions] = useState([
     { id: 1, step: 1, text: "" },
   ]);
+
   const [errors, setErrors] = useState({});
 
-  //  Track unsaved changes
+  // 🔹 Track unsaved changes
   useEffect(() => {
     const hasChanges =
       formData?.title?.trim() !== "" ||
@@ -52,7 +60,7 @@ const AddRecipe = () => {
     setHasUnsavedChanges(hasChanges);
   }, [formData, ingredients, instructions]);
 
-  //  Input handler
+  // 🔹 Input handler
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors?.[field]) {
@@ -60,7 +68,7 @@ const AddRecipe = () => {
     }
   };
 
-  //  Validation
+  // 🔹 Validation
   const validateForm = () => {
     const newErrors = {};
     if (!formData?.title?.trim()) newErrors.title = "Recipe title is required";
@@ -82,6 +90,7 @@ const AddRecipe = () => {
     if (validInstructions.length === 0)
       newErrors.instructions = "At least one instruction step is required";
 
+    // Cooking time format check
     if (
       formData?.time?.trim() &&
       !/^\d+\s*(min|mins|minutes?|hr|hrs|hours?|h)$/i.test(
@@ -91,6 +100,7 @@ const AddRecipe = () => {
       newErrors.time = 'Please use format like "30 mins" or "1 hour"';
     }
 
+    // Servings check
     if (
       formData?.servings?.trim() &&
       (isNaN(formData?.servings) || parseInt(formData?.servings) < 1)
@@ -102,7 +112,7 @@ const AddRecipe = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  //  Save handler
+  // 🔹 Save handler
   const handleSave = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -118,14 +128,14 @@ const AddRecipe = () => {
 
       const formDataToSend = new FormData();
       formDataToSend.append("title", formData.title);
-      formDataToSend.append("time", formData.time); //  fixed
+      formDataToSend.append("time", formData.time);
       formDataToSend.append("servings", formData.servings);
       formDataToSend.append("difficulty", formData.difficulty);
       formDataToSend.append("category", formData.category);
       formDataToSend.append("description", formData.description);
 
       if (formData.image instanceof File) {
-        formDataToSend.append("image", formData.image); //  backend route expects "image"
+        formDataToSend.append("image", formData.image);
       }
 
       formDataToSend.append("ingredients", JSON.stringify(validIngredients));
@@ -135,7 +145,7 @@ const AddRecipe = () => {
         localStorage.getItem("recipeHub-token") ||
         sessionStorage.getItem("recipeHub-token");
 
-      await axios.post("https://yammiverse.onrender.com/api/recipes", formDataToSend, {
+      await axios.post(`${API_BASE}/api/recipes`, formDataToSend, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
@@ -155,7 +165,7 @@ const AddRecipe = () => {
     }
   };
 
-  //  Options
+  // 🔹 Options
   const difficultyOptions = [
     { value: "easy", label: "Easy" },
     { value: "medium", label: "Medium" },
@@ -178,6 +188,7 @@ const AddRecipe = () => {
     "Vegan",
   ];
 
+  // 🔹 Render UI
   return (
     <div className="min-h-screen bg-background">
       <TopNavigation />
@@ -199,13 +210,12 @@ const AddRecipe = () => {
 
         {/* Form */}
         <form onSubmit={handleSave} className="space-y-8">
-          {/* Basic Information */}
+          {/* Basic Info */}
           <div className="bg-card rounded-lg border border-border p-6 space-y-6">
             <h2 className="text-xl font-heading font-semibold text-foreground flex items-center space-x-2">
               <Icon name="Info" size={20} />
               <span>Basic Information</span>
             </h2>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
                 <Input
@@ -218,18 +228,15 @@ const AddRecipe = () => {
                   required
                 />
               </div>
-
               <Input
                 label="Cooking Time"
                 type="text"
                 placeholder="e.g., 45 mins"
-                value={formData?.time} //  fixed
+                value={formData?.time}
                 onChange={(e) => handleInputChange("time", e?.target?.value)}
                 error={errors?.time}
-                description="Include prep and cook time"
                 required
               />
-
               <Input
                 label="Servings"
                 type="number"
@@ -242,7 +249,6 @@ const AddRecipe = () => {
                 min="1"
                 required
               />
-
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Difficulty Level *
@@ -261,7 +267,6 @@ const AddRecipe = () => {
                   ))}
                 </select>
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Category *
@@ -286,7 +291,6 @@ const AddRecipe = () => {
                   </p>
                 )}
               </div>
-
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Description
@@ -343,7 +347,7 @@ const AddRecipe = () => {
             />
           </div>
 
-          {/* Form Actions */}
+          {/* Actions */}
           <div className="bg-card rounded-lg border border-border p-6">
             {errors?.submit && (
               <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
