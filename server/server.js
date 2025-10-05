@@ -19,7 +19,7 @@ app.use(express.json({ limit: "10mb" }));
 const allowedOrigins = [
   "http://localhost:3000",        // React
   "http://localhost:5173",        // Vite
-  "https://yammiverse.onrender.com", // Render (frontend)
+  "https://yammiverse.onrender.com", // Render frontend
 ];
 
 // ✅ CORS Setup
@@ -35,19 +35,18 @@ app.use(
   })
 );
 
-// ✅ Debug Request Origins (optional for Render logs)
+// ✅ Debug Request Origins (optional)
 app.use((req, res, next) => {
   console.log(`[${req.method}] ${req.path} | Origin: ${req.headers.origin || "N/A"}`);
   next();
 });
 
-// ✅ Ensure upload directories exist (if used locally)
-const localDirs = ["./public/uploads", "./public/images"];
-localDirs.forEach((dir) => {
+// ✅ Ensure upload directories exist (local only)
+["./public/uploads", "./public/images"].forEach((dir) => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
-// ✅ Static assets (fallback for any local images/icons)
+// ✅ Serve Static Files
 app.use("/uploads", express.static(path.join(__dirname, "public", "uploads")));
 app.use("/images", express.static(path.join(__dirname, "public", "images")));
 app.use(express.static(path.join(__dirname, "public")));
@@ -57,13 +56,13 @@ app.use("/api/users", require("./routes/user"));
 app.use("/api/recipes", require("./routes/recipe"));
 app.use("/api/favorites", require("./routes/favorite"));
 
-// ✅ Serve React Frontend (supports both CRA & Vite)
+// ✅ React Frontend Serve (CRA or Vite build)
 const frontendPath = path.join(__dirname, "../client/build");
 if (fs.existsSync(frontendPath)) {
   app.use(express.static(frontendPath));
 
-  // ✅ Safe fallback route (Express 5 compatible)
-  app.get("/*", (req, res, next) => {
+  // ✅ SPA fallback (Express 5 compatible)
+  app.get("*", (req, res, next) => {
     if (
       req.method === "GET" &&
       !req.path.startsWith("/api") &&
