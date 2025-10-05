@@ -29,10 +29,7 @@ const upload = multer({ storage });
 // ✅ Get All Recipes
 const getRecipes = async (req, res) => {
   try {
-    const recipes = await Recipes.find().populate(
-      "createdBy",
-      "fullName email avatar"
-    );
+    const recipes = await Recipes.find().populate("createdBy", "fullName email avatar");
     res.json({
       success: true,
       message: "Recipes fetched successfully",
@@ -51,10 +48,7 @@ const getRecipes = async (req, res) => {
 // ✅ Get Single Recipe
 const getRecipe = async (req, res) => {
   try {
-    const recipe = await Recipes.findById(req.params.id).populate(
-      "createdBy",
-      "fullName email avatar"
-    );
+    const recipe = await Recipes.findById(req.params.id).populate("createdBy", "fullName email avatar");
     if (!recipe)
       return res.status(404).json({ success: false, message: "Recipe not found" });
 
@@ -76,6 +70,11 @@ const getRecipe = async (req, res) => {
 // ✅ Add New Recipe (Cloudinary)
 const addRecipe = async (req, res) => {
   try {
+    console.log("🟢 New Recipe Upload Request Received");
+    console.log("User:", req.user?.id);
+    console.log("File received from multer:", req.file);
+    console.log("Request body:", req.body);
+
     const {
       title,
       ingredients,
@@ -87,6 +86,7 @@ const addRecipe = async (req, res) => {
       description,
     } = req.body;
 
+    // 🧩 Basic Validation
     if (!title || !ingredients || !instructions) {
       return res.status(400).json({
         success: false,
@@ -101,15 +101,23 @@ const addRecipe = async (req, res) => {
       });
     }
 
-    // 🧾 Parse JSON Fields
-    const parsedIngredients =
-      typeof ingredients === "string" ? JSON.parse(ingredients) : ingredients;
-    const parsedInstructions =
-      typeof instructions === "string" ? JSON.parse(instructions) : instructions;
+    // 🧾 Parse JSON Fields Safely
+    let parsedIngredients = [];
+    let parsedInstructions = [];
 
-    // 🖼️ Handle Cloudinary image
-    const imageUrl = req.file ? req.file.path : "";
+    try {
+      parsedIngredients = typeof ingredients === "string" ? JSON.parse(ingredients) : ingredients;
+      parsedInstructions = typeof instructions === "string" ? JSON.parse(instructions) : instructions;
+    } catch (parseError) {
+      console.error("❌ JSON parse error:", parseError);
+      return res.status(400).json({ success: false, message: "Invalid JSON format in ingredients/instructions" });
+    }
 
+    // 🖼️ Cloudinary Upload Check
+    const imageUrl = req.file?.path || "";
+    console.log("✅ Cloudinary image URL:", imageUrl);
+
+    // 🧠 Create Recipe
     const newRecipe = await Recipes.create({
       title,
       ingredients: parsedIngredients,
@@ -123,11 +131,16 @@ const addRecipe = async (req, res) => {
       createdBy: req.user.id,
     });
 
-    res
-      .status(201)
-      .json({ success: true, message: "Recipe added successfully", recipe: newRecipe });
+    console.log("✅ Recipe saved successfully:", newRecipe._id);
+
+    res.status(201).json({
+      success: true,
+      message: "Recipe added successfully",
+      recipe: newRecipe,
+    });
+
   } catch (error) {
-    console.error("❌ Error adding recipe:", error);
+    console.error("🔥 Server Crash in addRecipe:", error);
     res.status(500).json({
       success: false,
       message: "Failed to add recipe",
@@ -161,7 +174,6 @@ const editRecipe = async (req, res) => {
         : req.body.instructions
       : recipe.instructions;
 
-    // 🖼️ Update image if new uploaded
     let coverImage = recipe.coverImage;
     if (req.file) coverImage = req.file.path;
 
@@ -209,14 +221,12 @@ const deleteRecipe = async (req, res) => {
         .json({ success: false, message: "Not authorized to delete this recipe" });
     }
 
-    // 🧹 Delete from Cloudinary (optional)
     if (recipe.coverImage && recipe.coverImage.includes("cloudinary.com")) {
       const publicId = recipe.coverImage.split("/").pop().split(".")[0];
       await cloudinary.uploader.destroy(`yammiverse_recipes/${publicId}`);
     }
 
     await Recipes.deleteOne({ _id: req.params.id });
-
     res.json({ success: true, message: "Recipe deleted successfully" });
   } catch (error) {
     console.error("❌ Error deleting recipe:", error);
@@ -228,7 +238,6 @@ const deleteRecipe = async (req, res) => {
   }
 };
 
-// ✅ Export
 module.exports = {
   getRecipes,
   getRecipe,
