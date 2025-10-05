@@ -1,26 +1,36 @@
 const Recipes = require("../models/recipe");
-const cloudinary = require("cloudinary").v2;
-const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
-// ✅ Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUD_NAME,
-  api_key: process.env.CLOUD_API_KEY,
-  api_secret: process.env.CLOUD_API_SECRET,
-});
-
-// ✅ Multer Storage for Cloudinary
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: "yammiverse_recipes",
-    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+//  Ensure upload folder exists (Render par zaroori hai)
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const dir = "./public/images";
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    cb(null, dir);
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, Date.now() + "-image" + ext);
   },
 });
-const upload = multer({ storage });
 
-// ✅ Get All Recipes
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if ([".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed (jpg, jpeg, png, webp)"), false);
+    }
+  },
+});
+
+//  Get all recipes
 const getRecipes = async (req, res) => {
   try {
     const recipes = await Recipes.find().populate("createdBy", "fullName email avatar");
@@ -30,7 +40,7 @@ const getRecipes = async (req, res) => {
   }
 };
 
-// ✅ Get Single Recipe
+//  Get recipe by ID
 const getRecipe = async (req, res) => {
   try {
     const recipe = await Recipes.findById(req.params.id).populate("createdBy", "fullName email avatar");
@@ -41,10 +51,19 @@ const getRecipe = async (req, res) => {
   }
 };
 
-// ✅ Add Recipe
+//  Add new recipe
 const addRecipe = async (req, res) => {
   try {
-    const { title, ingredients, instructions, cookingTime, servings, difficulty, category, description } = req.body;
+    const {
+      title,
+      ingredients,
+      instructions,
+      cookingTime, //  field consistent
+      servings,
+      difficulty,
+      category,
+      description,
+    } = req.body;
 
     if (!title || !ingredients || !instructions) {
       return res.status(400).json({ message: "Title, ingredients and instructions are required" });
@@ -54,8 +73,21 @@ const addRecipe = async (req, res) => {
       return res.status(401).json({ message: "Unauthorized: User not found" });
     }
 
-    const parsedIngredients = typeof ingredients === "string" ? JSON.parse(ingredients) : ingredients;
-    const parsedInstructions = typeof instructions === "string" ? JSON.parse(instructions) : instructions;
+    //  Parse JSON fields safely
+    let parsedIngredients = [];
+    let parsedInstructions = [];
+
+    try {
+      parsedIngredients = typeof ingredients === "string" ? JSON.parse(ingredients) : ingredients;
+    } catch {
+      return res.status(400).json({ message: "Invalid ingredients format" });
+    }
+
+    try {
+      parsedInstructions = typeof instructions === "string" ? JSON.parse(instructions) : instructions;
+    } catch {
+      return res.status(400).json({ message: "Invalid instructions format" });
+    }
 
     const newRecipe = await Recipes.create({
       title,
@@ -66,7 +98,7 @@ const addRecipe = async (req, res) => {
       difficulty,
       category,
       description,
-      coverImage: req.file ? req.file.path : "", // Cloudinary returns secure URL
+      coverImage: req.file ? `/images/${req.file.filename}` : "",
       createdBy: req.user.id,
     });
 
@@ -77,11 +109,12 @@ const addRecipe = async (req, res) => {
   }
 };
 
-// ✅ Edit Recipe
+//  Edit recipe
 const editRecipe = async (req, res) => {
   try {
     const recipe = await Recipes.findById(req.params.id);
     if (!recipe) return res.status(404).json({ message: "Recipe not found" });
+
     if (req.user && recipe.createdBy.toString() !== req.user.id) {
       return res.status(403).json({ message: "Not authorized to edit this recipe" });
     }
@@ -98,6 +131,13 @@ const editRecipe = async (req, res) => {
         : req.body.instructions
       : recipe.instructions;
 
+    let coverImage = recipe.coverImage;
+    if (req.file) {
+      coverImage = `/images/${req.file.filename}`;
+    } else if (req.body.coverImage) {
+      coverImage = req.body.coverImage;
+    }
+
     const updatedRecipe = await Recipes.findByIdAndUpdate(
       req.params.id,
       {
@@ -109,23 +149,23 @@ const editRecipe = async (req, res) => {
         difficulty: req.body.difficulty || recipe.difficulty,
         category: req.body.category || recipe.category,
         description: req.body.description || recipe.description,
-        coverImage: req.file ? req.file.path : recipe.coverImage,
+        coverImage,
       },
       { new: true }
     );
 
     res.json({ message: "Recipe updated successfully", recipe: updatedRecipe });
   } catch (error) {
-    console.error("❌ Error updating recipe:", error);
     res.status(500).json({ message: "Failed to update recipe", error: error.message });
   }
 };
 
-// ✅ Delete Recipe
+//  Delete recipe
 const deleteRecipe = async (req, res) => {
   try {
     const recipe = await Recipes.findById(req.params.id);
     if (!recipe) return res.status(404).json({ message: "Recipe not found" });
+
     if (req.user && recipe.createdBy.toString() !== req.user.id) {
       return res.status(403).json({ message: "Not authorized to delete this recipe" });
     }

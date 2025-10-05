@@ -4,8 +4,8 @@ import Button from "../../../components/ui/Button";
 import { Link, useNavigate } from "react-router-dom";
 
 const RecipeGrid = ({
-  recipes = [],
-  favorites = [],
+  recipes,
+  favorites,
   onToggleFavorite,
   currentUser,
   loading,
@@ -13,16 +13,15 @@ const RecipeGrid = ({
 }) => {
   const navigate = useNavigate();
 
-  // 🔹 Loading State
-  if (loading)
+  if (loading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
         Loading delicious recipes...
       </div>
     );
+  }
 
-  // 🔹 Error State
-  if (error)
+  if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <h3 className="text-lg font-semibold text-destructive">
@@ -33,9 +32,9 @@ const RecipeGrid = ({
         </p>
       </div>
     );
+  }
 
-  // 🔹 Empty State
-  if (!recipes || recipes.length === 0)
+  if (!recipes || recipes?.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <h3 className="text-lg font-semibold text-foreground">
@@ -44,6 +43,7 @@ const RecipeGrid = ({
         <p className="text-muted-foreground mb-4">
           Try adjusting your search terms or filters to find more recipes.
         </p>
+        {/* CTA Button */}
         <Link
           to="/add-recipe"
           className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition"
@@ -52,32 +52,21 @@ const RecipeGrid = ({
         </Link>
       </div>
     );
-
-  // ✅ Robust Image Normalization (Cloudinary + Local + Fallback)
-  const getImageUrl = (imagePath) => {
-    const localFallback = "/assets/images/no_image.png";
-    const cdnFallback =
-      "https://placehold.co/400x300/e5e7eb/1f2937?text=No+Image";
-
-    if (!imagePath) return localFallback;
-
-    // ✅ Cloudinary or external URL
-    if (imagePath.startsWith("http")) return imagePath;
-
-    // ✅ Backend upload path
-    const baseUrl = "https://yammiverse.onrender.com";
-    const fullPath = `${baseUrl}${
-      imagePath.startsWith("/") ? imagePath : `/${imagePath}`
-    }`;
-
-    return fullPath || cdnFallback;
-  };
+  }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {recipes.map((recipe) => {
+      {recipes?.map((recipe) => {
         const isOwner = recipe?.createdBy?._id === currentUser?._id;
-        const imageUrl = getImageUrl(recipe?.coverImage || recipe?.image);
+
+        //  Normalize image URL
+        let imageUrl = recipe?.coverImage || recipe?.image;
+        if (imageUrl && !imageUrl.startsWith("http")) {
+          imageUrl = `https://yammiverse.onrender.com/${imageUrl.replace(/\\/g, "/")}`;
+        }
+        if (!imageUrl) {
+          imageUrl = "https://via.placeholder.com/400x300?text=No+Image";
+        }
 
         return (
           <div
@@ -85,24 +74,14 @@ const RecipeGrid = ({
             onClick={() => navigate(`/recipes/${recipe?._id}`)}
             className="bg-card border border-border rounded-lg shadow-sm overflow-hidden group flex flex-col hover:shadow-lg transition cursor-pointer"
           >
-            {/* 🔹 Recipe Image */}
+            {/*  Recipe Image */}
             <img
               src={imageUrl}
-              alt={recipe?.title || "Recipe image"}
+              alt={recipe?.title}
               className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
-              onError={(e) => {
-                // fallback order: uploaded → local → CDN
-                if (!e.target.dataset.fallbackTried) {
-                  e.target.src = "/assets/images/no_image.png";
-                  e.target.dataset.fallbackTried = "true";
-                } else {
-                  e.target.src =
-                    "https://placehold.co/400x300/e5e7eb/1f2937?text=Image+Not+Found";
-                }
-              }}
             />
 
-            {/* 🔹 Recipe Content */}
+            {/*  Recipe Content */}
             <div className="p-4 flex flex-col flex-grow">
               <h3 className="font-semibold text-lg text-foreground mb-2 line-clamp-1">
                 {recipe?.title}
@@ -111,10 +90,30 @@ const RecipeGrid = ({
                 {recipe?.description || "No description provided."}
               </p>
 
-              {/* 🔹 Owner Controls */}
+              {/*  Actions */}
               <div className="mt-auto flex items-center justify-between">
+                {/* Favorite Toggle */}
+                {/* Agar favorites feature on karna ho */}
+                {/* <button
+                  onClick={(e) => {
+                    e.stopPropagation(); // 🚫 prevent card navigation
+                    onToggleFavorite(recipe?._id);
+                  }}
+                  className="p-2 rounded-full hover:bg-muted transition"
+                >
+                  <Icon
+                    name={
+                      favorites?.includes(recipe?._id) ? "Heart" : "HeartOff"
+                    }
+                    size={18}
+                    color={favorites?.includes(recipe?._id) ? "red" : "gray"}
+                  />
+                </button> */}
+
+                {/* Owner Only Controls */}
                 {isOwner && (
                   <div className="flex items-center gap-2">
+                    {/* Edit button ab <button> hai, nested <Link> problem solve */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -142,7 +141,9 @@ const RecipeGrid = ({
                               `https://yammiverse.onrender.com/api/recipes/${recipe?._id}`,
                               {
                                 method: "DELETE",
-                                headers: { Authorization: `Bearer ${token}` },
+                                headers: {
+                                  Authorization: `Bearer ${token}`,
+                                },
                               }
                             );
                             window.location.reload();
