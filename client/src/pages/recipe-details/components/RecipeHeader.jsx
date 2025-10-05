@@ -21,18 +21,24 @@ const RecipeHeader = ({
     );
   }
 
-  // ✅ Normalize Image URL (support local + Cloudinary)
-  let imageUrl = recipe?.coverImage || recipe?.image || "";
-  if (imageUrl && !imageUrl.startsWith("http")) {
-    imageUrl = `https://yammiverse.onrender.com${
-      imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`
+  // ✅ Centralized Safe Image URL function
+  const getImageUrl = (imagePath) => {
+    const fallback = "/assets/images/no_image.png"; // local fallback image
+
+    if (!imagePath) return fallback; // no image at all
+
+    // ✅ If it's already a Cloudinary or external image
+    if (imagePath.startsWith("http")) return imagePath;
+
+    // ✅ Otherwise, assume it's from backend uploads
+    return `https://yammiverse.onrender.com${
+      imagePath.startsWith("/") ? imagePath : `/${imagePath}`
     }`;
-  }
+  };
 
-  // ✅ Reliable fallback (no DNS errors)
-  const fallbackImage = "/assets/images/no_image.png";
+  const imageUrl = getImageUrl(recipe?.coverImage || recipe?.image);
 
-  // ✅ Check ownership (only creator can edit/delete)
+  // ✅ Check ownership
   const isOwner =
     currentUser?._id?.toString() === recipe?.createdBy?._id?.toString();
 
@@ -41,17 +47,11 @@ const RecipeHeader = ({
       {/* 🔹 Recipe Image */}
       <div className="relative h-64 md:h-80 lg:h-96 overflow-hidden">
         <Image
-          src={imageUrl || fallbackImage}
+          src={imageUrl}
           alt={recipe?.title || "Recipe image"}
           className="w-full h-full object-cover"
           onError={(e) => {
-            if (!e.target.dataset.fallbackTried) {
-              e.target.src = fallbackImage;
-              e.target.dataset.fallbackTried = "true";
-            } else {
-              e.target.src =
-                "https://dummyimage.com/600x400/e5e7eb/1f2937.png&text=No+Image";
-            }
+            e.target.src = "/assets/images/no_image.png";
           }}
         />
 
@@ -62,7 +62,9 @@ const RecipeHeader = ({
             onToggleFavorite?.();
           }}
           className="absolute top-4 right-4 w-12 h-12 bg-background/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-background transition-micro shadow-warm"
-          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+          aria-label={
+            isFavorite ? "Remove from favorites" : "Add to favorites"
+          }
         >
           <Icon
             name="Heart"
@@ -144,7 +146,7 @@ const RecipeHeader = ({
           )}
         </div>
 
-        {/* 🔹 Recipe Description */}
+        {/* 🔹 Description */}
         {recipe?.description && (
           <p className="mt-4 text-muted-foreground leading-relaxed">
             {recipe.description}

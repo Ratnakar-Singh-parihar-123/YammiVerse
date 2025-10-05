@@ -12,10 +12,10 @@ const PORT = process.env.PORT || 5000;
 // ✅ Connect MongoDB
 connectDb();
 
-// ✅ JSON Middleware
+// ✅ Middleware
 app.use(express.json({ limit: "10mb" }));
 
-// ✅ Allowed Origins
+// ✅ Allowed Origins (Frontend URLs)
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
@@ -35,34 +35,35 @@ app.use(
   })
 );
 
-// ✅ Debug Request Origins (optional)
+// ✅ Debug Request Origins
 app.use((req, res, next) => {
   console.log(`[${req.method}] ${req.path} | Origin: ${req.headers.origin || "N/A"}`);
   next();
 });
 
-// ✅ Ensure upload folders exist
+// ✅ Ensure Upload Folders Exist (Render sometimes resets filesystem)
 ["./public/uploads", "./public/images"].forEach((dir) => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
-// ✅ Static file serving
-app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
-app.use("/images", express.static(path.join(__dirname, "public/images")));
-app.use(express.static("public"));
+// ✅ Serve Static Files (Correct Path Fix)
+app.use("/uploads", express.static(path.join(__dirname, "public", "uploads")));
+app.use("/images", express.static(path.join(__dirname, "public", "images")));
+app.use(express.static(path.join(__dirname, "public"))); // keep public assets accessible
 
 // ✅ API Routes
 app.use("/api/users", require("./routes/user"));
 app.use("/api/recipes", require("./routes/recipe"));
 app.use("/api/favorites", require("./routes/favorite"));
 
-// ✅ React Frontend Serve
+// ✅ React Frontend Serve (SPA-safe)
 const frontendPath = path.join(__dirname, "../client/build");
+
 if (fs.existsSync(frontendPath)) {
   app.use(express.static(frontendPath));
 
-  // ✅ FIXED: Express 5 Safe Fallback
-  app.use((req, res, next) => {
+  // ✅ Fallback Route (Express 5 Safe)
+  app.get("/*", (req, res, next) => {
     if (
       req.method === "GET" &&
       !req.path.startsWith("/api") &&
