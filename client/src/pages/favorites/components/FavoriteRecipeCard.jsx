@@ -15,10 +15,14 @@ const FavoriteRecipeCard = React.memo(({ recipe, onToggleFavorite }) => {
   // ✅ Normalize Image URL (supports Cloudinary or local)
   let imageUrl = recipe?.coverImage || recipe?.image || "";
   if (imageUrl && !imageUrl.startsWith("http")) {
-    imageUrl = `https://yammiverse.onrender.com${imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`}`;
+    imageUrl = `https://yammiverse.onrender.com${
+      imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`
+    }`;
   }
+
+  // ✅ Reliable fallback image
   if (!imageUrl) {
-    imageUrl = "https://via.placeholder.com/400x300?text=No+Image";
+    imageUrl = "https://placehold.co/400x300?text=No+Image&font=inter";
   }
 
   return (
@@ -31,6 +35,10 @@ const FavoriteRecipeCard = React.memo(({ recipe, onToggleFavorite }) => {
             src={imageUrl}
             alt={recipe?.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            onError={(e) =>
+              (e.target.src =
+                "https://placehold.co/400x300?text=Image+Not+Found&font=inter")
+            }
           />
 
           {/* ❤️ Favorite Button */}

@@ -53,14 +53,12 @@ const RecipeGrid = ({
       </div>
     );
 
-  // ✅ Normalize Image URLs
+  // ✅ Normalize Image URLs + safe fallback
   const getImageUrl = (imagePath) => {
-    if (!imagePath) return "https://via.placeholder.com/400x300?text=No+Image";
-
-    // Already a full URL (Cloudinary or external)
+    if (!imagePath)
+      return "https://placehold.co/400x300?text=No+Image&font=inter";
     if (imagePath.startsWith("http")) return imagePath;
 
-    // Local file (Render or localhost)
     const baseUrl = "https://yammiverse.onrender.com";
     return `${baseUrl}${imagePath.startsWith("/") ? imagePath : `/${imagePath}`}`;
   };
@@ -83,8 +81,7 @@ const RecipeGrid = ({
               alt={recipe?.title}
               className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
               onError={(e) =>
-                (e.target.src =
-                  "https://via.placeholder.com/400x300?text=Image+Not+Found")
+                (e.target.src = "https://placehold.co/400x300?text=Image+Not+Found")
               }
             />
 
@@ -99,28 +96,6 @@ const RecipeGrid = ({
 
               {/* 🔹 Actions */}
               <div className="mt-auto flex items-center justify-between">
-                {/* Favorite (optional future use) */}
-                {/* <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleFavorite(recipe?._id);
-                  }}
-                  className="p-2 rounded-full hover:bg-muted transition"
-                >
-                  <Icon
-                    name={
-                      favorites?.includes(recipe?._id)
-                        ? "Heart"
-                        : "HeartOff"
-                    }
-                    size={18}
-                    color={
-                      favorites?.includes(recipe?._id) ? "red" : "gray"
-                    }
-                  />
-                </button> */}
-
-                {/* Owner Controls */}
                 {isOwner && (
                   <div className="flex items-center gap-2">
                     <button
@@ -132,15 +107,14 @@ const RecipeGrid = ({
                     >
                       Edit
                     </button>
+
                     <Button
                       size="sm"
                       variant="destructive"
                       onClick={async (e) => {
                         e.stopPropagation();
                         if (
-                          window.confirm(
-                            "Are you sure you want to delete this recipe?"
-                          )
+                          window.confirm("Are you sure you want to delete this recipe?")
                         ) {
                           try {
                             const token = localStorage.getItem("recipeHub-token");
