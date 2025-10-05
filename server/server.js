@@ -15,18 +15,17 @@ connectDb();
 // ✅ Middleware
 app.use(express.json({ limit: "10mb" }));
 
-// ✅ Allowed Frontend Origins
+// ✅ CORS Allowed Origins
 const allowedOrigins = [
-  "http://localhost:3000",        // React
-  "http://localhost:5173",        // Vite
-  "https://yammiverse.onrender.com", // Render frontend
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "https://yammiverse.onrender.com",
 ];
 
-// ✅ CORS Setup
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // allow Postman/local
+      if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) return callback(null, true);
       console.warn("🚫 Blocked by CORS:", origin);
       return callback(new Error("Not allowed by CORS"));
@@ -35,20 +34,19 @@ app.use(
   })
 );
 
-// ✅ Debug Request Origins (optional)
+// ✅ Debug log
 app.use((req, res, next) => {
   console.log(`[${req.method}] ${req.path} | Origin: ${req.headers.origin || "N/A"}`);
   next();
 });
 
-// ✅ Ensure upload directories exist (local only)
+// ✅ Local static directories
 ["./public/uploads", "./public/images"].forEach((dir) => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
-// ✅ Serve Static Files
-app.use("/uploads", express.static(path.join(__dirname, "public", "uploads")));
-app.use("/images", express.static(path.join(__dirname, "public", "images")));
+app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
+app.use("/images", express.static(path.join(__dirname, "public/images")));
 app.use(express.static(path.join(__dirname, "public")));
 
 // ✅ API Routes
@@ -56,13 +54,13 @@ app.use("/api/users", require("./routes/user"));
 app.use("/api/recipes", require("./routes/recipe"));
 app.use("/api/favorites", require("./routes/favorite"));
 
-// ✅ React Frontend Serve (CRA or Vite build)
+// ✅ Serve React frontend
 const frontendPath = path.join(__dirname, "../client/build");
 if (fs.existsSync(frontendPath)) {
   app.use(express.static(frontendPath));
 
-  // ✅ SPA fallback (Express 5 compatible)
-  app.get("*", (req, res, next) => {
+  // ✅ Express 5-safe SPA fallback
+  app.use((req, res, next) => {
     if (
       req.method === "GET" &&
       !req.path.startsWith("/api") &&
