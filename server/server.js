@@ -1,89 +1,77 @@
-// server.js
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const path = require("path");
-const fs = require("fs");
 const connectDb = require("./config/connectionDb");
 
 dotenv.config();
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Connect DB
+//  Connect Database
 connectDb();
 
-// JSON middleware
-app.use(express.json({ limit: "10mb" }));
+//  Middlewares
+app.use(express.json());
 
-// Allowed origins
+//  Allowed Origins
 const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:5173",
-  "https://yammiverse.onrender.com",
+  "http://localhost:3000",      // React default
+  "http://localhost:5173",      // Vite default
+  "https://yammiverse.onrender.com" // Your deployed frontend
 ];
 
+//  CORS Config
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-      console.warn("🚫 Blocked by CORS:", origin);
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // Postman, curl
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      console.log("❌ Blocked by CORS:", origin);
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
 );
 
-// Simple request logger
+//  Debug origin (optional, remove in production)
 app.use((req, res, next) => {
-  console.log(`[${req.method}] ${req.path} | Origin: ${req.headers.origin || "N/A"}`);
+  console.log("Request Origin:", req.headers.origin);
   next();
 });
 
-// Ensure local upload directories exist (dev fallback)
-["./public/uploads", "./public/images"].forEach((dir) => {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-});
+//  Static files
+app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
+app.use(express.static("public"));
 
-// Serve static assets
-app.use("/uploads", express.static(path.join(__dirname, "public", "uploads")));
-app.use("/images", express.static(path.join(__dirname, "public", "images")));
-app.use(express.static(path.join(__dirname, "public")));
-
-// API routes
+//  API Routes
 app.use("/api/users", require("./routes/user"));
 app.use("/api/recipes", require("./routes/recipe"));
 app.use("/api/favorites", require("./routes/favorite"));
 
-// Serve frontend SPA safely (no direct wildcard route registration)
-const frontendPath = path.join(__dirname, "../client/build");
-if (fs.existsSync(frontendPath)) {
-  app.use(express.static(frontendPath));
-
-  // SPA fallback for GET requests that are not API or static files
-  app.use((req, res, next) => {
-    const isApi = req.path.startsWith("/api");
-    const isStatic = req.path.startsWith("/uploads") || req.path.startsWith("/images");
-    if (req.method === "GET" && !isApi && !isStatic) {
-      return res.sendFile(path.resolve(frontendPath, "index.html"));
-    }
+// -------------------------
+//  React frontend serve
+// -------------------------
+const frontendPath = path.join(__dirname, "../client/build"); // CRA -> build | Vite -> dist
+app.use(express.static(frontendPath));
+app.use((req, res, next) => {
+  if (req.method === "GET" && !req.path.startsWith("/api")) {
+    res.sendFile(path.resolve(frontendPath, "index.html"));
+  } else {
     next();
-  });
-} else {
-  console.warn("⚠️ React build folder not found — skipping frontend serving.");
-}
-
-// Global error handler - prints stack if available
-app.use((err, req, res, next) => {
-  console.error("🔥 Server Error:", err && (err.stack || err.message || err));
-  res.status(500).json({
-    success: false,
-    message: "Internal Server Error",
-    error: err && (err.message || String(err)),
-  });
+  }
 });
 
-// Start
+//  Error handler
+app.use((err, req, res, next) => {
+  console.error("🔥 Error:", err.message);
+  res.status(500).json({ message: "Something went wrong!", error: err.message });
+});
+
+//  Start Server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

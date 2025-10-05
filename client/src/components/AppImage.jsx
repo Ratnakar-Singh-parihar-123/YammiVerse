@@ -1,32 +1,23 @@
-import React from "react";
+import React from 'react';
 
-function AppImage({
+function Image({
   src,
-  alt = "Image",
+  alt = "Image Name",
   className = "",
   ...props
 }) {
-  // ✅ Local + Cloudinary-safe fallback
-  const fallbackImage = "/assets/images/no_image.png";
-
-  // ✅ Error handler (prevents infinite loop)
-  const handleError = (e) => {
-    if (e.target.src !== fallbackImage) {
-      e.target.onerror = null; // prevent re-trigger
-      e.target.src = fallbackImage;
-    }
-  };
 
   return (
     <img
-      src={src || fallbackImage}
+      src={src}
       alt={alt}
-      className={`object-cover ${className}`}
-      loading="lazy"
-      onError={handleError}
+      className={className}
+      onError={(e) => {
+        e.target.src = "/assets/images/no_image.png"
+      }}
       {...props}
     />
   );
 }
 
-export default AppImage;
+export default Image;
