@@ -12,7 +12,7 @@ const FavoriteRecipeCard = React.memo(({ recipe, onToggleFavorite }) => {
     onToggleFavorite?.(recipe?._id);
   };
 
-  // ✅ Normalize image URL (supports Cloudinary + local uploads)
+  // ✅ Normalize image URL (Cloudinary or local upload)
   let imageUrl = recipe?.coverImage || recipe?.image || "";
   if (imageUrl && !imageUrl.startsWith("http")) {
     imageUrl = `https://yammiverse.onrender.com${
@@ -20,9 +20,9 @@ const FavoriteRecipeCard = React.memo(({ recipe, onToggleFavorite }) => {
     }`;
   }
 
-  // ✅ Reliable fallback (works globally)
-  const fallbackImage =
-    "https://dummyimage.com/600x400/e5e7eb/1f2937.png&text=No+Image";
+  // ✅ Fallbacks
+  const localFallback = "/assets/images/no_image.png"; // Add this to your public folder
+  const remoteFallback = "https://placehold.co/600x400?text=No+Image&font=inter";
 
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm hover:shadow-md transition-all duration-300 group overflow-hidden">
@@ -31,10 +31,19 @@ const FavoriteRecipeCard = React.memo(({ recipe, onToggleFavorite }) => {
         {/* 🔹 Image Section */}
         <div className="relative h-48 overflow-hidden">
           <Image
-            src={imageUrl || fallbackImage}
+            src={imageUrl || localFallback}
             alt={recipe?.title || "Recipe image"}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            onError={(e) => (e.target.src = fallbackImage)}
+            onError={(e) => {
+              // Primary fallback to local image
+              if (!e.target.dataset.fallbackTried) {
+                e.target.src = localFallback;
+                e.target.dataset.fallbackTried = "true";
+              } else {
+                // Secondary fallback if even local image fails
+                e.target.src = remoteFallback;
+              }
+            }}
           />
 
           {/* ❤️ Favorite Button */}

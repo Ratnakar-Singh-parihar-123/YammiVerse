@@ -13,7 +13,7 @@ const RecipeGrid = ({
 }) => {
   const navigate = useNavigate();
 
-  // 🔹 Loading state
+  // 🔹 Loading
   if (loading)
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
@@ -21,7 +21,7 @@ const RecipeGrid = ({
       </div>
     );
 
-  // 🔹 Error state
+  // 🔹 Error
   if (error)
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -34,7 +34,7 @@ const RecipeGrid = ({
       </div>
     );
 
-  // 🔹 No recipes found
+  // 🔹 No Recipes
   if (!recipes || recipes.length === 0)
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -53,11 +53,10 @@ const RecipeGrid = ({
       </div>
     );
 
-  // ✅ Normalize Image URLs + reliable fallback
+  // ✅ Normalize image URLs + reliable local fallback
   const getImageUrl = (imagePath) => {
-    const fallback = "https://dummyimage.com/400x300/e5e7eb/1f2937.png&text=No+Image";
-
-    if (!imagePath) return fallback;
+    const fallbackLocal = "/assets/images/no_image.png"; // ✅ your local image
+    if (!imagePath) return fallbackLocal;
     if (imagePath.startsWith("http")) return imagePath;
 
     const baseUrl = "https://yammiverse.onrender.com";
@@ -81,10 +80,16 @@ const RecipeGrid = ({
               src={imageUrl}
               alt={recipe?.title}
               className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
-              onError={(e) =>
-                (e.target.src =
-                  "https://dummyimage.com/400x300/e5e7eb/1f2937.png&text=Image+Not+Found")
-              }
+              onError={(e) => {
+                // ✅ fallback order: image → local → safe CDN fallback
+                if (!e.target.dataset.fallbackTried) {
+                  e.target.src = "/assets/images/no_image.png";
+                  e.target.dataset.fallbackTried = "true";
+                } else {
+                  e.target.src =
+                    "https://dummyimage.com/400x300/e5e7eb/1f2937.png&text=No+Image";
+                }
+              }}
             />
 
             {/* 🔹 Content */}
@@ -121,7 +126,8 @@ const RecipeGrid = ({
                           )
                         ) {
                           try {
-                            const token = localStorage.getItem("recipeHub-token");
+                            const token =
+                              localStorage.getItem("recipeHub-token");
                             await fetch(
                               `https://yammiverse.onrender.com/api/recipes/${recipe?._id}`,
                               {

@@ -16,7 +16,8 @@ const FavoritesGrid = ({ recipes = [], onToggleFavorite }) => {
 
   // 🔹 Render Grid
   return (
-    <div
+    <section
+      aria-label="Favorite recipes"
       className="
         grid 
         grid-cols-1 
@@ -25,16 +26,17 @@ const FavoritesGrid = ({ recipes = [], onToggleFavorite }) => {
         xl:grid-cols-4 
         gap-6 
         animate-fadeIn
+        px-2
       "
     >
       {recipes.map((recipe, index) => (
         <FavoriteRecipeCard
-          key={recipe?._id || index} // ✅ Stable key
+          key={recipe?._id || `favorite-${index}`} // ✅ Stable + unique key
           recipe={recipe}
           onToggleFavorite={onToggleFavorite}
         />
       ))}
-    </div>
+    </section>
   );
 };
 
