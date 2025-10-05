@@ -13,7 +13,7 @@ const RecipeGrid = ({
 }) => {
   const navigate = useNavigate();
 
-  // 🔹 Loading
+  // 🔹 Loading state
   if (loading)
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
@@ -21,7 +21,7 @@ const RecipeGrid = ({
       </div>
     );
 
-  // 🔹 Error
+  // 🔹 Error state
   if (error)
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -34,13 +34,11 @@ const RecipeGrid = ({
       </div>
     );
 
-  // 🔹 No Recipes
+  // 🔹 No recipes found
   if (!recipes || recipes.length === 0)
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <h3 className="text-lg font-semibold text-foreground">
-          No recipes found
-        </h3>
+        <h3 className="text-lg font-semibold text-foreground">No recipes found</h3>
         <p className="text-muted-foreground mb-4">
           Try adjusting your search terms or filters to find more recipes.
         </p>
@@ -53,12 +51,19 @@ const RecipeGrid = ({
       </div>
     );
 
-  // ✅ Normalize image URLs + reliable local fallback
+  // ✅ Normalize image URLs with robust fallback logic
   const getImageUrl = (imagePath) => {
-    const fallbackLocal = "/assets/images/no_image.png"; // ✅ your local image
-    if (!imagePath) return fallbackLocal;
+    // Local fallback image (place this in public/assets/images/no_image.png)
+    const localFallback = "/assets/images/no_image.png";
+    const cdnFallback = "https://placehold.co/400x300/e5e7eb/1f2937?text=No+Image";
+
+    // If missing, fallback immediately
+    if (!imagePath) return localFallback;
+
+    // If Cloudinary or any HTTP URL → use as is
     if (imagePath.startsWith("http")) return imagePath;
 
+    // Otherwise assume it's a local upload
     const baseUrl = "https://yammiverse.onrender.com";
     return `${baseUrl}${imagePath.startsWith("/") ? imagePath : `/${imagePath}`}`;
   };
@@ -78,16 +83,16 @@ const RecipeGrid = ({
             {/* 🔹 Recipe Image */}
             <img
               src={imageUrl}
-              alt={recipe?.title}
+              alt={recipe?.title || "Recipe image"}
               className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
               onError={(e) => {
-                // ✅ fallback order: image → local → safe CDN fallback
+                // fallback order: uploaded → local → CDN placeholder
                 if (!e.target.dataset.fallbackTried) {
                   e.target.src = "/assets/images/no_image.png";
                   e.target.dataset.fallbackTried = "true";
                 } else {
                   e.target.src =
-                    "https://dummyimage.com/400x300/e5e7eb/1f2937.png&text=No+Image";
+                    "https://placehold.co/400x300/e5e7eb/1f2937?text=Image+Not+Found";
                 }
               }}
             />
@@ -101,7 +106,7 @@ const RecipeGrid = ({
                 {recipe?.description || "No description provided."}
               </p>
 
-              {/* 🔹 Actions */}
+              {/* 🔹 Owner Controls */}
               <div className="mt-auto flex items-center justify-between">
                 {isOwner && (
                   <div className="flex items-center gap-2">
@@ -114,27 +119,21 @@ const RecipeGrid = ({
                     >
                       Edit
                     </button>
-
                     <Button
                       size="sm"
                       variant="destructive"
                       onClick={async (e) => {
                         e.stopPropagation();
                         if (
-                          window.confirm(
-                            "Are you sure you want to delete this recipe?"
-                          )
+                          window.confirm("Are you sure you want to delete this recipe?")
                         ) {
                           try {
-                            const token =
-                              localStorage.getItem("recipeHub-token");
+                            const token = localStorage.getItem("recipeHub-token");
                             await fetch(
                               `https://yammiverse.onrender.com/api/recipes/${recipe?._id}`,
                               {
                                 method: "DELETE",
-                                headers: {
-                                  Authorization: `Bearer ${token}`,
-                                },
+                                headers: { Authorization: `Bearer ${token}` },
                               }
                             );
                             window.location.reload();

@@ -1,34 +1,30 @@
 import React from "react";
 
-function Image({
+function AppImage({
   src,
   alt = "Image",
   className = "",
   ...props
 }) {
-  // 🧩 Local fallback image (place one in /public/assets/images/no_image.png)
-  const localFallback = "/assets/images/no_image.png";
+  // ✅ Reliable global fallback (works everywhere)
+  const fallbackImage = "https://placehold.co/600x400/e5e7eb/1f2937?text=No+Image";
 
-  // 🧩 Online backup fallback (only used if local missing)
-  const remoteFallback = "https://dummyimage.com/600x400/e5e7eb/1f2937.png&text=No+Image";
+  // ✅ Ensure correct rendering
+  const handleError = (e) => {
+    e.target.onerror = null; // Prevent infinite loop
+    e.target.src = fallbackImage;
+  };
 
   return (
     <img
-      src={src || localFallback}
+      src={src || fallbackImage}
       alt={alt}
-      className={className}
+      className={`object-cover ${className}`}
       loading="lazy"
-      onError={(e) => {
-        // Fallback order: uploaded image → local fallback → remote fallback
-        if (e.target.src !== window.location.origin + localFallback) {
-          e.target.src = localFallback;
-        } else {
-          e.target.src = remoteFallback;
-        }
-      }}
+      onError={handleError}
       {...props}
     />
   );
 }
 
-export default Image;
+export default AppImage;

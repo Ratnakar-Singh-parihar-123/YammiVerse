@@ -21,13 +21,13 @@ const RecipeDetailsPage = () => {
     localStorage.getItem("recipeHub-token") ||
     sessionStorage.getItem("recipeHub-token");
 
-  // ✅ Fetch Recipe, User, and Favorites
+  // ✅ Fetch Recipe + User + Favorites
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
 
-        // Fetch recipe details
+        // Fetch recipe
         const recipeRes = await axios.get(
           `https://yammiverse.onrender.com/api/recipes/${recipeId}`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -35,15 +35,18 @@ const RecipeDetailsPage = () => {
 
         let recipeData = recipeRes.data.recipe || recipeRes.data;
 
-        // Normalize image (support local + cloudinary)
+        // ✅ Normalize image (Cloudinary + local + fallback)
         if (recipeData?.coverImage || recipeData?.image) {
           let imageUrl = recipeData.coverImage || recipeData.image;
           if (!imageUrl.startsWith("http")) {
-            imageUrl = `https://yammiverse.onrender.com${imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`}`;
+            imageUrl = `https://yammiverse.onrender.com${
+              imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`
+            }`;
           }
           recipeData.image = imageUrl;
         } else {
-          recipeData.image = "https://via.placeholder.com/600x400?text=No+Image";
+          // ✅ Local fallback instead of placeholder.com
+          recipeData.image = "/assets/images/no_image.png";
         }
 
         setRecipe(recipeData);
@@ -62,8 +65,14 @@ const RecipeDetailsPage = () => {
         );
 
         const favorites = favRes.data.favorites || [];
-        // ✅ Fix: match recipe._id correctly
-        setIsFavorite(favorites.some((fav) => fav.recipe?._id === recipeId));
+        setIsFavorite(
+          favorites.some(
+            (fav) =>
+              fav._id === recipeId ||
+              fav.recipe?._id === recipeId ||
+              fav.recipeId === recipeId
+          )
+        );
       } catch (error) {
         console.error("❌ Error fetching recipe details:", error);
         setRecipe(null);
@@ -97,9 +106,10 @@ const RecipeDetailsPage = () => {
     }
   };
 
-  // ✅ Edit / Delete Handlers
+  // ✅ Edit & Delete Handlers
   const handleEdit = () => navigate(`/edit-recipe/${recipeId}`);
   const handleDelete = () => setIsDeleteModalOpen(true);
+
   const handleConfirmDelete = async () => {
     try {
       await axios.delete(
@@ -115,9 +125,10 @@ const RecipeDetailsPage = () => {
       setIsDeleteModalOpen(false);
     }
   };
+
   const handleCloseDeleteModal = () => setIsDeleteModalOpen(false);
 
-  // ✅ Loading State
+  // ✅ Loading UI
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -132,7 +143,7 @@ const RecipeDetailsPage = () => {
     );
   }
 
-  // ✅ Not Found
+  // ✅ Recipe Not Found
   if (!recipe) {
     return (
       <div className="min-h-screen bg-background">
@@ -157,7 +168,7 @@ const RecipeDetailsPage = () => {
     );
   }
 
-  // ✅ Main Recipe Render
+  // ✅ Main Recipe View
   return (
     <div className="min-h-screen bg-background">
       <TopNavigation />

@@ -29,9 +29,8 @@ const RecipeHeader = ({
     }`;
   }
 
-  // ✅ Reliable fallback (no DNS error)
-  const fallbackImage =
-    "https://dummyimage.com/600x400/e5e7eb/1f2937.png&text=No+Image";
+  // ✅ Reliable fallback (no DNS errors)
+  const fallbackImage = "/assets/images/no_image.png";
 
   // ✅ Check ownership (only creator can edit/delete)
   const isOwner =
@@ -39,13 +38,21 @@ const RecipeHeader = ({
 
   return (
     <div className="bg-card rounded-lg shadow-warm overflow-hidden">
-      {/* Recipe Image */}
+      {/* 🔹 Recipe Image */}
       <div className="relative h-64 md:h-80 lg:h-96 overflow-hidden">
         <Image
           src={imageUrl || fallbackImage}
           alt={recipe?.title || "Recipe image"}
           className="w-full h-full object-cover"
-          onError={(e) => (e.target.src = fallbackImage)}
+          onError={(e) => {
+            if (!e.target.dataset.fallbackTried) {
+              e.target.src = fallbackImage;
+              e.target.dataset.fallbackTried = "true";
+            } else {
+              e.target.src =
+                "https://dummyimage.com/600x400/e5e7eb/1f2937.png&text=No+Image";
+            }
+          }}
         />
 
         {/* ❤️ Favorite Button */}
@@ -69,7 +76,7 @@ const RecipeHeader = ({
         </button>
       </div>
 
-      {/* Recipe Info */}
+      {/* 🔹 Recipe Info */}
       <div className="p-6">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div className="flex-1">
@@ -77,7 +84,7 @@ const RecipeHeader = ({
               {recipe?.title}
             </h1>
 
-            {/* Meta Info */}
+            {/* 🔸 Meta Info */}
             <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
               {recipe?.cookingTime && (
                 <div className="flex items-center gap-2">
@@ -114,7 +121,7 @@ const RecipeHeader = ({
             </div>
           </div>
 
-          {/* 👤 Owner Actions */}
+          {/* 👤 Owner Controls */}
           {isOwner && (
             <div className="flex items-center space-x-3">
               <Link
@@ -137,7 +144,7 @@ const RecipeHeader = ({
           )}
         </div>
 
-        {/* Recipe Description */}
+        {/* 🔹 Recipe Description */}
         {recipe?.description && (
           <p className="mt-4 text-muted-foreground leading-relaxed">
             {recipe.description}
