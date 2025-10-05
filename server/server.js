@@ -37,18 +37,16 @@ app.use(
 
 // ✅ Debug Request Origins (optional)
 app.use((req, res, next) => {
-  console.log(
-    `[${req.method}] ${req.path} | Origin: ${req.headers.origin || "N/A"}`
-  );
+  console.log(`[${req.method}] ${req.path} | Origin: ${req.headers.origin || "N/A"}`);
   next();
 });
 
-// ✅ Ensure upload folders exist (local + Render safety)
+// ✅ Ensure upload folders exist
 ["./public/uploads", "./public/images"].forEach((dir) => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
-// ✅ Static file serving (for uploaded assets)
+// ✅ Static file serving
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 app.use("/images", express.static(path.join(__dirname, "public/images")));
 app.use(express.static("public"));
@@ -58,13 +56,13 @@ app.use("/api/users", require("./routes/user"));
 app.use("/api/recipes", require("./routes/recipe"));
 app.use("/api/favorites", require("./routes/favorite"));
 
-// ✅ React Frontend Serve (for SPA routing)
+// ✅ React Frontend Serve
 const frontendPath = path.join(__dirname, "../client/build");
 if (fs.existsSync(frontendPath)) {
   app.use(express.static(frontendPath));
 
-  // ✅ FIXED FOR EXPRESS 5 (use "/*" instead of "*")
-  app.get("/*", (req, res, next) => {
+  // ✅ FIXED: Express 5 Safe Fallback
+  app.use((req, res, next) => {
     if (
       req.method === "GET" &&
       !req.path.startsWith("/api") &&
