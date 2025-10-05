@@ -14,7 +14,6 @@ const AddRecipe = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // ✅ Form state (cookingTime fix)
   const [formData, setFormData] = useState({
     title: "",
     cookingTime: "",
@@ -25,132 +24,95 @@ const AddRecipe = () => {
     image: null,
   });
 
-  const [ingredients, setIngredients] = useState([
-    { id: 1, name: "", quantity: "", unit: "" },
-  ]);
-  const [instructions, setInstructions] = useState([
-    { id: 1, step: 1, text: "" },
-  ]);
-
+  const [ingredients, setIngredients] = useState([{ id: 1, name: "", quantity: "", unit: "" }]);
+  const [instructions, setInstructions] = useState([{ id: 1, step: 1, text: "" }]);
   const [errors, setErrors] = useState({});
 
-  // 🔹 Track unsaved changes
+  // ✅ Track unsaved changes
   useEffect(() => {
     const hasChanges =
-      formData.title.trim() !== "" ||
-      formData.cookingTime.trim() !== "" ||
-      formData.servings.trim() !== "" ||
-      formData.category.trim() !== "" ||
-      formData.description.trim() !== "" ||
-      formData.image !== null ||
-      ingredients.some(
-        (ing) =>
-          ing.name.trim() !== "" ||
-          ing.quantity.trim() !== "" ||
-          ing.unit.trim() !== ""
-      ) ||
-      instructions.some((inst) => inst.text.trim() !== "");
+      formData.title ||
+      formData.cookingTime ||
+      formData.servings ||
+      formData.category ||
+      formData.description ||
+      formData.image ||
+      ingredients.some((ing) => ing.name || ing.quantity || ing.unit) ||
+      instructions.some((inst) => inst.text);
     setHasUnsavedChanges(hasChanges);
   }, [formData, ingredients, instructions]);
 
-  // 🔹 Input handler
+  // ✅ Input change handler
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors?.[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
-  // 🔹 Validation
+  // ✅ Validation
   const validateForm = () => {
     const newErrors = {};
     if (!formData.title.trim()) newErrors.title = "Recipe title is required";
-    if (!formData.cookingTime.trim())
-      newErrors.cookingTime = "Cooking time is required";
-    if (!formData.servings.trim())
-      newErrors.servings = "Number of servings is required";
-    if (!formData.category.trim())
-      newErrors.category = "Recipe category is required";
+    if (!formData.cookingTime.trim()) newErrors.cookingTime = "Cooking time is required";
+    if (!formData.servings.trim()) newErrors.servings = "Number of servings is required";
+    if (!formData.category.trim()) newErrors.category = "Recipe category is required";
 
-    // Ingredients
     const validIngredients = ingredients.filter(
-      (ing) => ing.name.trim() !== "" && ing.quantity.trim() !== ""
+      (ing) => ing.name.trim() && ing.quantity.trim()
     );
     if (validIngredients.length === 0)
       newErrors.ingredients = "At least one ingredient is required";
 
-    // Instructions
-    const validInstructions = instructions.filter(
-      (inst) => inst.text.trim() !== ""
-    );
+    const validInstructions = instructions.filter((inst) => inst.text.trim());
     if (validInstructions.length === 0)
       newErrors.instructions = "At least one instruction step is required";
-
-    // Cooking time format
-    if (
-      formData.cookingTime.trim() &&
-      !/^\d+\s*(min|mins|minutes?|hr|hrs|hours?|h)$/i.test(
-        formData.cookingTime.trim()
-      )
-    ) {
-      newErrors.cookingTime = 'Please use format like "30 mins" or "1 hour"';
-    }
-
-    // Servings check
-    if (
-      formData.servings.trim() &&
-      (isNaN(formData.servings) || parseInt(formData.servings) < 1)
-    ) {
-      newErrors.servings = "Servings must be a positive number";
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // 🔹 Save handler
+  // ✅ Save handler (Cloudinary-ready)
   const handleSave = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
     setIsLoading(true);
 
     try {
-      const validIngredients = ingredients.filter(
-        (ing) => ing.name.trim() !== "" && ing.quantity.trim() !== ""
-      );
-      const validInstructions = instructions.filter(
-        (inst) => inst.text.trim() !== ""
-      );
-
-      const formDataToSend = new FormData();
-      formDataToSend.append("title", formData.title);
-      formDataToSend.append("cookingTime", formData.cookingTime);
-      formDataToSend.append("servings", formData.servings);
-      formDataToSend.append("difficulty", formData.difficulty);
-      formDataToSend.append("category", formData.category);
-      formDataToSend.append("description", formData.description);
-
+      // Convert image → Base64
+      let imageBase64 = null;
       if (formData.image instanceof File) {
-        formDataToSend.append("image", formData.image);
+        imageBase64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(formData.image);
+        });
       }
 
-      formDataToSend.append("ingredients", JSON.stringify(validIngredients));
-      formDataToSend.append("instructions", JSON.stringify(validInstructions));
+      const validIngredients = ingredients.filter(
+        (ing) => ing.name.trim() && ing.quantity.trim()
+      );
+      const validInstructions = instructions.filter((inst) => inst.text.trim());
 
       const token =
         localStorage.getItem("recipeHub-token") ||
         sessionStorage.getItem("recipeHub-token");
 
-      await axios.post(
-        "https://yammiverse.onrender.com/api/recipes",
-        formDataToSend,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const payload = {
+        title: formData.title,
+        cookingTime: formData.cookingTime,
+        servings: formData.servings,
+        difficulty: formData.difficulty,
+        category: formData.category,
+        description: formData.description,
+        ingredients: JSON.stringify(validIngredients),
+        instructions: JSON.stringify(validInstructions),
+        imageBase64, // 👈 Cloudinary image data
+      };
+
+      await axios.post("https://yammiverse.onrender.com/api/recipes", payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       navigate("/home", { state: { message: "Recipe created successfully!" } });
     } catch (error) {
@@ -165,7 +127,6 @@ const AddRecipe = () => {
     }
   };
 
-  // 🔹 Options
   const difficultyOptions = [
     { value: "easy", label: "Easy" },
     { value: "medium", label: "Medium" },
@@ -203,32 +164,30 @@ const AddRecipe = () => {
             </h1>
           </div>
           <p className="text-muted-foreground">
-            Share your culinary creation with the RecipeHub community
+            Share your culinary creation with the YammiVerse community
           </p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSave} className="space-y-8">
-          {/* Basic Information */}
+          {/* Basic Info */}
           <div className="bg-card rounded-lg border border-border p-6 space-y-6">
             <h2 className="text-xl font-heading font-semibold text-foreground flex items-center space-x-2">
               <Icon name="Info" size={20} />
               <span>Basic Information</span>
             </h2>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
                 <Input
                   label="Recipe Title"
                   type="text"
-                  placeholder="e.g., Grandma's Chocolate Chip Cookies"
+                  placeholder="e.g., Chocolate Cake"
                   value={formData.title}
                   onChange={(e) => handleInputChange("title", e.target.value)}
                   error={errors.title}
                   required
                 />
               </div>
-
               <Input
                 label="Cooking Time"
                 type="text"
@@ -240,7 +199,6 @@ const AddRecipe = () => {
                 error={errors.cookingTime}
                 required
               />
-
               <Input
                 label="Servings"
                 type="number"
@@ -251,7 +209,6 @@ const AddRecipe = () => {
                 min="1"
                 required
               />
-
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Difficulty Level *
@@ -261,7 +218,7 @@ const AddRecipe = () => {
                   onChange={(e) =>
                     handleInputChange("difficulty", e.target.value)
                   }
-                  className="w-full h-10 px-3 py-2 bg-input border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                  className="w-full h-10 px-3 py-2 bg-input border border-border rounded-md text-sm focus:ring-2 focus:ring-ring"
                 >
                   {difficultyOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -270,7 +227,6 @@ const AddRecipe = () => {
                   ))}
                 </select>
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Category *
@@ -280,12 +236,12 @@ const AddRecipe = () => {
                   onChange={(e) =>
                     handleInputChange("category", e.target.value)
                   }
-                  className="w-full h-10 px-3 py-2 bg-input border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                  className="w-full h-10 px-3 py-2 bg-input border border-border rounded-md text-sm focus:ring-2 focus:ring-ring"
                 >
                   <option value="">Select a category</option>
-                  {categoryOptions.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
+                  {categoryOptions.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
                     </option>
                   ))}
                 </select>
@@ -295,25 +251,24 @@ const AddRecipe = () => {
                   </p>
                 )}
               </div>
-
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Description
                 </label>
                 <textarea
-                  placeholder="Brief description of your recipe..."
+                  placeholder="Brief description..."
                   value={formData.description}
                   onChange={(e) =>
                     handleInputChange("description", e.target.value)
                   }
                   rows={3}
-                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-sm resize-none focus:ring-2 focus:ring-ring"
                 />
               </div>
             </div>
           </div>
 
-          {/* Recipe Image */}
+          {/* Image Upload */}
           <div className="bg-card rounded-lg border border-border p-6">
             <h2 className="text-xl font-heading font-semibold text-foreground flex items-center space-x-2 mb-6">
               <Icon name="Camera" size={20} />

@@ -4,8 +4,8 @@ import Button from "../../../components/ui/Button";
 import { Link, useNavigate } from "react-router-dom";
 
 const RecipeGrid = ({
-  recipes,
-  favorites,
+  recipes = [],
+  favorites = [],
   onToggleFavorite,
   currentUser,
   loading,
@@ -13,6 +13,7 @@ const RecipeGrid = ({
 }) => {
   const navigate = useNavigate();
 
+  // 🔹 Loading state
   if (loading)
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
@@ -20,6 +21,7 @@ const RecipeGrid = ({
       </div>
     );
 
+  // 🔹 Error state
   if (error)
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -32,6 +34,7 @@ const RecipeGrid = ({
       </div>
     );
 
+  // 🔹 No recipes found
   if (!recipes || recipes.length === 0)
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -50,22 +53,23 @@ const RecipeGrid = ({
       </div>
     );
 
+  // ✅ Normalize Image URLs
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return "https://via.placeholder.com/400x300?text=No+Image";
+
+    // Already a full URL (Cloudinary or external)
+    if (imagePath.startsWith("http")) return imagePath;
+
+    // Local file (Render or localhost)
+    const baseUrl = "https://yammiverse.onrender.com";
+    return `${baseUrl}${imagePath.startsWith("/") ? imagePath : `/${imagePath}`}`;
+  };
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {recipes.map((recipe) => {
         const isOwner = recipe?.createdBy?._id === currentUser?._id;
-
-        // ✅ Image normalization
-        let imageUrl = recipe?.coverImage || recipe?.image || "";
-        const baseUrl = "https://yammiverse.onrender.com";
-
-        if (imageUrl && !imageUrl.startsWith("http")) {
-          // remove leading slash if present
-          imageUrl = `${baseUrl}${imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`}`;
-        }
-
-        if (!imageUrl)
-          imageUrl = "https://via.placeholder.com/400x300?text=No+Image";
+        const imageUrl = getImageUrl(recipe?.coverImage || recipe?.image);
 
         return (
           <div
@@ -73,18 +77,18 @@ const RecipeGrid = ({
             onClick={() => navigate(`/recipes/${recipe?._id}`)}
             className="bg-card border border-border rounded-lg shadow-sm overflow-hidden group flex flex-col hover:shadow-lg transition cursor-pointer"
           >
-            {/* ✅ Recipe Image */}
+            {/* 🔹 Recipe Image */}
             <img
               src={imageUrl}
               alt={recipe?.title}
+              className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
               onError={(e) =>
                 (e.target.src =
                   "https://via.placeholder.com/400x300?text=Image+Not+Found")
               }
-              className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
             />
 
-            {/* Content */}
+            {/* 🔹 Content */}
             <div className="p-4 flex flex-col flex-grow">
               <h3 className="font-semibold text-lg text-foreground mb-2 line-clamp-1">
                 {recipe?.title}
@@ -93,7 +97,30 @@ const RecipeGrid = ({
                 {recipe?.description || "No description provided."}
               </p>
 
+              {/* 🔹 Actions */}
               <div className="mt-auto flex items-center justify-between">
+                {/* Favorite (optional future use) */}
+                {/* <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleFavorite(recipe?._id);
+                  }}
+                  className="p-2 rounded-full hover:bg-muted transition"
+                >
+                  <Icon
+                    name={
+                      favorites?.includes(recipe?._id)
+                        ? "Heart"
+                        : "HeartOff"
+                    }
+                    size={18}
+                    color={
+                      favorites?.includes(recipe?._id) ? "red" : "gray"
+                    }
+                  />
+                </button> */}
+
+                {/* Owner Controls */}
                 {isOwner && (
                   <div className="flex items-center gap-2">
                     <button
@@ -116,8 +143,7 @@ const RecipeGrid = ({
                           )
                         ) {
                           try {
-                            const token =
-                              localStorage.getItem("recipeHub-token");
+                            const token = localStorage.getItem("recipeHub-token");
                             await fetch(
                               `https://yammiverse.onrender.com/api/recipes/${recipe?._id}`,
                               {

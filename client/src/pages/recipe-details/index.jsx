@@ -11,69 +11,78 @@ import DeleteConfirmationModal from "./components/DeleteConfirmationModal";
 const RecipeDetailsPage = () => {
   const navigate = useNavigate();
   const { id: recipeId } = useParams();
-
   const [recipe, setRecipe] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState(null); // 👈 Added
+  const [currentUser, setCurrentUser] = useState(null);
 
   const token =
     localStorage.getItem("recipeHub-token") ||
     sessionStorage.getItem("recipeHub-token");
 
-  //  Fetch recipe + user + favorites
+  // ✅ Fetch Recipe, User, and Favorites
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
 
-        // Get recipe
-        const res = await axios.get(
+        // Fetch recipe details
+        const recipeRes = await axios.get(
           `https://yammiverse.onrender.com/api/recipes/${recipeId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        let recipeData = res.data.recipe || res.data;
 
-        // Fix image URL
-        if (recipeData?.image && !recipeData.image.startsWith("http")) {
-          recipeData.image = `https://yammiverse.onrender.com/${recipeData.image.replace(
-            /\\/g,
-            "/"
-          )}`;
+        let recipeData = recipeRes.data.recipe || recipeRes.data;
+
+        // Normalize image (support local + cloudinary)
+        if (recipeData?.coverImage || recipeData?.image) {
+          let imageUrl = recipeData.coverImage || recipeData.image;
+          if (!imageUrl.startsWith("http")) {
+            imageUrl = `https://yammiverse.onrender.com${imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`}`;
+          }
+          recipeData.image = imageUrl;
+        } else {
+          recipeData.image = "https://via.placeholder.com/600x400?text=No+Image";
         }
+
         setRecipe(recipeData);
 
-        // Get current user
-        const userRes = await axios.get("https://yammiverse.onrender.com/api/users/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // Fetch current user
+        const userRes = await axios.get(
+          "https://yammiverse.onrender.com/api/users/me",
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         setCurrentUser(userRes.data.user);
 
-        // Get favorites
-        const favRes = await axios.get("https://yammiverse.onrender.com/api/favorites", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // Fetch favorites
+        const favRes = await axios.get(
+          "https://yammiverse.onrender.com/api/favorites",
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
         const favorites = favRes.data.favorites || [];
-        setIsFavorite(favorites.some((fav) => fav._id === recipeId));
-      } catch (err) {
-        console.error("❌ Error fetching recipe details:", err);
+        // ✅ Fix: match recipe._id correctly
+        setIsFavorite(favorites.some((fav) => fav.recipe?._id === recipeId));
+      } catch (error) {
+        console.error("❌ Error fetching recipe details:", error);
         setRecipe(null);
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (recipeId) fetchData();
+    if (recipeId && token) fetchData();
   }, [recipeId, token]);
 
-  //  Toggle favorite
+  // ✅ Toggle Favorite
   const handleToggleFavorite = async () => {
     try {
       if (isFavorite) {
-        await axios.delete(`https://yammiverse.onrender.com/api/favorites/${recipeId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await axios.delete(
+          `https://yammiverse.onrender.com/api/favorites/${recipeId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         setIsFavorite(false);
       } else {
         await axios.post(
@@ -83,38 +92,32 @@ const RecipeDetailsPage = () => {
         );
         setIsFavorite(true);
       }
-    } catch (err) {
-      console.error("❌ Favorite toggle failed:", err);
+    } catch (error) {
+      console.error("❌ Favorite toggle failed:", error);
     }
   };
 
-  //  Edit
-  const handleEdit = () => {
-    navigate(`/recipes/edit/${recipeId}`);
-  };
-
-  //  Delete
+  // ✅ Edit / Delete Handlers
+  const handleEdit = () => navigate(`/edit-recipe/${recipeId}`);
   const handleDelete = () => setIsDeleteModalOpen(true);
-
   const handleConfirmDelete = async () => {
     try {
-      await axios.delete(`https://yammiverse.onrender.com/api/recipes/${recipeId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      console.log(` Recipe ${recipe?.title} deleted`);
+      await axios.delete(
+        `https://yammiverse.onrender.com/api/recipes/${recipeId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       navigate("/home", {
         state: { message: "Recipe deleted successfully!" },
       });
-    } catch (err) {
-      console.error("❌ Delete failed:", err);
+    } catch (error) {
+      console.error("❌ Delete failed:", error);
     } finally {
       setIsDeleteModalOpen(false);
     }
   };
-
   const handleCloseDeleteModal = () => setIsDeleteModalOpen(false);
 
-  //  Loading state
+  // ✅ Loading State
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -129,18 +132,18 @@ const RecipeDetailsPage = () => {
     );
   }
 
-  //  Not found
+  // ✅ Not Found
   if (!recipe) {
     return (
       <div className="min-h-screen bg-background">
         <TopNavigation />
-        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-          <div className="text-center">
+        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] text-center">
+          <div>
             <h1 className="text-2xl font-heading font-semibold text-foreground mb-2">
               Recipe Not Found
             </h1>
             <p className="text-muted-foreground mb-4">
-              The recipe you're looking for doesn't exist.
+              The recipe you're looking for doesn't exist or was removed.
             </p>
             <button
               onClick={() => navigate("/home")}
@@ -154,7 +157,7 @@ const RecipeDetailsPage = () => {
     );
   }
 
-  //  Render Recipe
+  // ✅ Main Recipe Render
   return (
     <div className="min-h-screen bg-background">
       <TopNavigation />
@@ -167,10 +170,10 @@ const RecipeDetailsPage = () => {
             onToggleFavorite={handleToggleFavorite}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            currentUser={currentUser} // 👈 Pass currentUser here
+            currentUser={currentUser}
           />
 
-          {/* Content */}
+          {/* Ingredients + Instructions */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-1">
               <IngredientsList ingredients={recipe?.ingredients} />
@@ -180,12 +183,12 @@ const RecipeDetailsPage = () => {
             </div>
           </div>
 
-          {/* Nutrition */}
-          {recipe?.nutrition && <NutritionInfo nutrition={recipe?.nutrition} />}
+          {/* Optional Nutrition Section */}
+          {recipe?.nutrition && <NutritionInfo nutrition={recipe.nutrition} />}
         </div>
       </main>
 
-      {/* Delete Modal */}
+      {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={handleCloseDeleteModal}

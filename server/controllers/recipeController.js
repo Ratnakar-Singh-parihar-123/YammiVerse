@@ -1,37 +1,24 @@
 const Recipes = require("../models/recipe");
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
 
-// ✅ Ensure upload folder exists (Render-safe)
-const uploadDir = path.join(__dirname, "../public/uploads");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// ✅ Multer Config
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, Date.now() + "-recipe" + ext);
-  },
+// ✅ Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.CLOUD_API_KEY,
+  api_secret: process.env.CLOUD_API_SECRET,
 });
 
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB limit
-  fileFilter: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    if ([".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only image files are allowed (jpg, jpeg, png, webp)"), false);
-    }
+// ✅ Multer Storage for Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "yammiverse_recipes",
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
   },
 });
+const upload = multer({ storage });
 
 // ✅ Get All Recipes
 const getRecipes = async (req, res) => {
@@ -58,25 +45,17 @@ const getRecipe = async (req, res) => {
 const addRecipe = async (req, res) => {
   try {
     const { title, ingredients, instructions, cookingTime, servings, difficulty, category, description } = req.body;
+
     if (!title || !ingredients || !instructions) {
       return res.status(400).json({ message: "Title, ingredients and instructions are required" });
     }
+
     if (!req.user || !req.user.id) {
       return res.status(401).json({ message: "Unauthorized: User not found" });
     }
 
-    let parsedIngredients = [];
-    let parsedInstructions = [];
-    try {
-      parsedIngredients = typeof ingredients === "string" ? JSON.parse(ingredients) : ingredients;
-    } catch {
-      return res.status(400).json({ message: "Invalid ingredients format" });
-    }
-    try {
-      parsedInstructions = typeof instructions === "string" ? JSON.parse(instructions) : instructions;
-    } catch {
-      return res.status(400).json({ message: "Invalid instructions format" });
-    }
+    const parsedIngredients = typeof ingredients === "string" ? JSON.parse(ingredients) : ingredients;
+    const parsedInstructions = typeof instructions === "string" ? JSON.parse(instructions) : instructions;
 
     const newRecipe = await Recipes.create({
       title,
@@ -87,13 +66,9 @@ const addRecipe = async (req, res) => {
       difficulty,
       category,
       description,
-      coverImage: req.file ? `/uploads/${req.file.filename}` : "",
+      coverImage: req.file ? req.file.path : "", // Cloudinary returns secure URL
       createdBy: req.user.id,
     });
-
-    // ✅ Full URL for frontend
-    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
-    newRecipe.coverImage = req.file ? `${baseUrl}/uploads/${req.file.filename}` : "";
 
     res.status(201).json({ message: "Recipe added successfully", recipe: newRecipe });
   } catch (error) {
@@ -123,13 +98,6 @@ const editRecipe = async (req, res) => {
         : req.body.instructions
       : recipe.instructions;
 
-    let coverImage = recipe.coverImage;
-    if (req.file) {
-      coverImage = `/uploads/${req.file.filename}`;
-    } else if (req.body.coverImage) {
-      coverImage = req.body.coverImage;
-    }
-
     const updatedRecipe = await Recipes.findByIdAndUpdate(
       req.params.id,
       {
@@ -141,18 +109,14 @@ const editRecipe = async (req, res) => {
         difficulty: req.body.difficulty || recipe.difficulty,
         category: req.body.category || recipe.category,
         description: req.body.description || recipe.description,
-        coverImage,
+        coverImage: req.file ? req.file.path : recipe.coverImage,
       },
       { new: true }
     );
 
-    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
-    updatedRecipe.coverImage = updatedRecipe.coverImage
-      ? `${baseUrl}${updatedRecipe.coverImage.replace(/\\/g, "/")}`
-      : "";
-
     res.json({ message: "Recipe updated successfully", recipe: updatedRecipe });
   } catch (error) {
+    console.error("❌ Error updating recipe:", error);
     res.status(500).json({ message: "Failed to update recipe", error: error.message });
   }
 };
@@ -164,11 +128,6 @@ const deleteRecipe = async (req, res) => {
     if (!recipe) return res.status(404).json({ message: "Recipe not found" });
     if (req.user && recipe.createdBy.toString() !== req.user.id) {
       return res.status(403).json({ message: "Not authorized to delete this recipe" });
-    }
-
-    // Optionally delete file from uploads folder
-    if (recipe.coverImage && fs.existsSync(path.join(__dirname, `../public${recipe.coverImage}`))) {
-      fs.unlinkSync(path.join(__dirname, `../public${recipe.coverImage}`));
     }
 
     await Recipes.deleteOne({ _id: req.params.id });

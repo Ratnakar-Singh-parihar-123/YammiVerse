@@ -9,11 +9,11 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ✅ Connect Database
+// ✅ Connect MongoDB
 connectDb();
 
-// ✅ Middleware
-app.use(express.json());
+// ✅ JSON Middleware
+app.use(express.json({ limit: "10mb" }));
 
 // ✅ Allowed Origins
 const allowedOrigins = [
@@ -22,31 +22,31 @@ const allowedOrigins = [
   "https://yammiverse.onrender.com",
 ];
 
-// ✅ CORS Config
+// ✅ CORS Setup
 app.use(
   cors({
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) return callback(null, true);
-      console.log("❌ Blocked by CORS:", origin);
+      console.warn("🚫 Blocked by CORS:", origin);
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
 );
 
-// ✅ Debug (optional)
+// ✅ Debug Request Origins (optional)
 app.use((req, res, next) => {
-  console.log("Request Origin:", req.headers.origin);
+  console.log(`[${req.method}] ${req.path} | Origin: ${req.headers.origin || "N/A"}`);
   next();
 });
 
-// ✅ Ensure upload folders exist (important for Render)
+// ✅ Ensure upload folders exist (local dev safety)
 ["./public/uploads", "./public/images"].forEach((dir) => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
-// ✅ Static files
+// ✅ Static file serving (for locally uploaded assets)
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 app.use("/images", express.static(path.join(__dirname, "public/images")));
 app.use(express.static("public"));
@@ -56,33 +56,40 @@ app.use("/api/users", require("./routes/user"));
 app.use("/api/recipes", require("./routes/recipe"));
 app.use("/api/favorites", require("./routes/favorite"));
 
-// ✅ React frontend serve (safe fallback for Express 5)
+// ✅ React Frontend Serve (SPA-safe routing)
 const frontendPath = path.join(__dirname, "../client/build");
-app.use(express.static(frontendPath));
+if (fs.existsSync(frontendPath)) {
+  app.use(express.static(frontendPath));
 
-app.use((req, res, next) => {
-  // Serve React only for non-API, non-static routes
-  if (
-    req.method === "GET" &&
-    !req.path.startsWith("/api") &&
-    !req.path.startsWith("/uploads") &&
-    !req.path.startsWith("/images")
-  ) {
-    return res.sendFile(path.resolve(frontendPath, "index.html"));
-  }
-  next();
-});
+  // Serve React index.html for all non-API routes
+  app.get("*", (req, res, next) => {
+    if (
+      req.method === "GET" &&
+      !req.path.startsWith("/api") &&
+      !req.path.startsWith("/uploads") &&
+      !req.path.startsWith("/images")
+    ) {
+      res.sendFile(path.resolve(frontendPath, "index.html"));
+    } else {
+      next();
+    }
+  });
+} else {
+  console.warn("⚠️ React build folder not found, skipping static frontend serve.");
+}
 
-// ✅ Global Error Handler
+// ✅ Error Handler (global)
 app.use((err, req, res, next) => {
-  console.error("🔥 Error:", err.message);
+  console.error("🔥 Server Error:", err);
   res.status(500).json({
-    message: "Something went wrong!",
+    success: false,
+    message: "Something went wrong on the server.",
     error: err.message,
   });
 });
 
-// ✅ Start Server
+// ✅ Server Start
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+  console.log(`🚀 Server running on ${baseUrl}`);
 });
