@@ -1,35 +1,22 @@
-// routes/favorite.js
-const express = require("express");
-const router = express.Router();
-const {
-  getFavorites,
-  addFavorite,
-  removeFavorite,
-} = require("../controllers/favoriteController");
-const authMiddleware = require("../middleware/authMiddleware");
+const mongoose = require("mongoose");
 
-// ------------------------------
-// ✅ FAVORITE ROUTES
-// ------------------------------
+const favoriteSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",   //  user who marked favorite
+      required: true,
+    },
+    recipe: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Recipe", //  recipe which is favorited
+      required: true,
+    },
+  },
+  { timestamps: true }
+);
 
-// 🔹 Get all favorites (of logged-in user)
-router.get("/", authMiddleware, getFavorites);
+// 🔹 Ensure one recipe can be favorited only once per user
+favoriteSchema.index({ user: 1, recipe: 1 }, { unique: true });
 
-// 🔹 Add a recipe to favorites
-router.post("/:recipeId", authMiddleware, addFavorite);
-
-// 🔹 Remove a recipe from favorites
-router.delete("/:recipeId", authMiddleware, removeFavorite);
-
-// ------------------------------
-// ✅ Error safety fallback
-// ------------------------------
-router.use((err, req, res, next) => {
-  console.error("🔥 Favorite Route Error:", err.message);
-  res.status(500).json({
-    message: "Something went wrong in favorites route!",
-    error: err.message,
-  });
-});
-
-module.exports = router;
+module.exports = mongoose.model("Favorite", favoriteSchema);
