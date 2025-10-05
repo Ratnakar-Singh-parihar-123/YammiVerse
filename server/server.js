@@ -37,16 +37,18 @@ app.use(
 
 // ✅ Debug Request Origins (optional)
 app.use((req, res, next) => {
-  console.log(`[${req.method}] ${req.path} | Origin: ${req.headers.origin || "N/A"}`);
+  console.log(
+    `[${req.method}] ${req.path} | Origin: ${req.headers.origin || "N/A"}`
+  );
   next();
 });
 
-// ✅ Ensure upload folders exist (local dev safety)
+// ✅ Ensure upload folders exist (local + Render safety)
 ["./public/uploads", "./public/images"].forEach((dir) => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
-// ✅ Static file serving (for locally uploaded assets)
+// ✅ Static file serving (for uploaded assets)
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 app.use("/images", express.static(path.join(__dirname, "public/images")));
 app.use(express.static("public"));
@@ -56,29 +58,28 @@ app.use("/api/users", require("./routes/user"));
 app.use("/api/recipes", require("./routes/recipe"));
 app.use("/api/favorites", require("./routes/favorite"));
 
-// ✅ React Frontend Serve (SPA-safe routing)
+// ✅ React Frontend Serve (for SPA routing)
 const frontendPath = path.join(__dirname, "../client/build");
 if (fs.existsSync(frontendPath)) {
   app.use(express.static(frontendPath));
 
-  // Serve React index.html for all non-API routes
-  app.get("*", (req, res, next) => {
+  // ✅ FIXED FOR EXPRESS 5 (use "/*" instead of "*")
+  app.get("/*", (req, res, next) => {
     if (
       req.method === "GET" &&
       !req.path.startsWith("/api") &&
       !req.path.startsWith("/uploads") &&
       !req.path.startsWith("/images")
     ) {
-      res.sendFile(path.resolve(frontendPath, "index.html"));
-    } else {
-      next();
+      return res.sendFile(path.resolve(frontendPath, "index.html"));
     }
+    next();
   });
 } else {
   console.warn("⚠️ React build folder not found, skipping static frontend serve.");
 }
 
-// ✅ Error Handler (global)
+// ✅ Global Error Handler
 app.use((err, req, res, next) => {
   console.error("🔥 Server Error:", err);
   res.status(500).json({
@@ -88,7 +89,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ✅ Server Start
+// ✅ Start Server
 app.listen(PORT, () => {
   const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
   console.log(`🚀 Server running on ${baseUrl}`);
