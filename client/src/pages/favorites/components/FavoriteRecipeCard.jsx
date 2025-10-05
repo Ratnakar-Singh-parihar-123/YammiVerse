@@ -12,7 +12,7 @@ const FavoriteRecipeCard = React.memo(({ recipe, onToggleFavorite }) => {
     onToggleFavorite?.(recipe?._id);
   };
 
-  // ✅ Normalize Image URL (supports Cloudinary or local)
+  // ✅ Normalize image URL (supports Cloudinary + local uploads)
   let imageUrl = recipe?.coverImage || recipe?.image || "";
   if (imageUrl && !imageUrl.startsWith("http")) {
     imageUrl = `https://yammiverse.onrender.com${
@@ -20,10 +20,9 @@ const FavoriteRecipeCard = React.memo(({ recipe, onToggleFavorite }) => {
     }`;
   }
 
-  // ✅ Reliable fallback image
-  if (!imageUrl) {
-    imageUrl = "https://placehold.co/400x300?text=No+Image&font=inter";
-  }
+  // ✅ Reliable fallback (works globally)
+  const fallbackImage =
+    "https://dummyimage.com/600x400/e5e7eb/1f2937.png&text=No+Image";
 
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm hover:shadow-md transition-all duration-300 group overflow-hidden">
@@ -32,13 +31,10 @@ const FavoriteRecipeCard = React.memo(({ recipe, onToggleFavorite }) => {
         {/* 🔹 Image Section */}
         <div className="relative h-48 overflow-hidden">
           <Image
-            src={imageUrl}
-            alt={recipe?.title}
+            src={imageUrl || fallbackImage}
+            alt={recipe?.title || "Recipe image"}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            onError={(e) =>
-              (e.target.src =
-                "https://placehold.co/400x300?text=Image+Not+Found&font=inter")
-            }
+            onError={(e) => (e.target.src = fallbackImage)}
           />
 
           {/* ❤️ Favorite Button */}

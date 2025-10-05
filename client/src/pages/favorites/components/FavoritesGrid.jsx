@@ -2,9 +2,10 @@ import React from "react";
 import FavoriteRecipeCard from "./FavoriteRecipeCard";
 
 const FavoritesGrid = ({ recipes = [], onToggleFavorite }) => {
+  // 🔹 Empty state
   if (!recipes?.length) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
+      <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground animate-fadeIn">
         <p className="text-lg font-medium mb-2">No favorite recipes yet</p>
         <p className="text-sm">
           ❤️ Save some recipes to see them appear here!
@@ -13,6 +14,7 @@ const FavoritesGrid = ({ recipes = [], onToggleFavorite }) => {
     );
   }
 
+  // 🔹 Render Grid
   return (
     <div
       className="

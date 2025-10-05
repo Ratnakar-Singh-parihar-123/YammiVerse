@@ -53,10 +53,11 @@ const RecipeGrid = ({
       </div>
     );
 
-  // ✅ Normalize Image URLs + safe fallback
+  // ✅ Normalize Image URLs + reliable fallback
   const getImageUrl = (imagePath) => {
-    if (!imagePath)
-      return "https://placehold.co/400x300?text=No+Image&font=inter";
+    const fallback = "https://dummyimage.com/400x300/e5e7eb/1f2937.png&text=No+Image";
+
+    if (!imagePath) return fallback;
     if (imagePath.startsWith("http")) return imagePath;
 
     const baseUrl = "https://yammiverse.onrender.com";
@@ -81,7 +82,8 @@ const RecipeGrid = ({
               alt={recipe?.title}
               className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
               onError={(e) =>
-                (e.target.src = "https://placehold.co/400x300?text=Image+Not+Found")
+                (e.target.src =
+                  "https://dummyimage.com/400x300/e5e7eb/1f2937.png&text=Image+Not+Found")
               }
             />
 
@@ -114,7 +116,9 @@ const RecipeGrid = ({
                       onClick={async (e) => {
                         e.stopPropagation();
                         if (
-                          window.confirm("Are you sure you want to delete this recipe?")
+                          window.confirm(
+                            "Are you sure you want to delete this recipe?"
+                          )
                         ) {
                           try {
                             const token = localStorage.getItem("recipeHub-token");

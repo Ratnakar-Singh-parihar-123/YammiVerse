@@ -21,14 +21,17 @@ const RecipeHeader = ({
     );
   }
 
-  // ✅ Ensure full image URL (support local + Cloudinary)
-  let imageUrl = recipe?.coverImage || recipe?.image;
+  // ✅ Normalize Image URL (support local + Cloudinary)
+  let imageUrl = recipe?.coverImage || recipe?.image || "";
   if (imageUrl && !imageUrl.startsWith("http")) {
-    imageUrl = `https://yammiverse.onrender.com${imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`}`;
+    imageUrl = `https://yammiverse.onrender.com${
+      imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`
+    }`;
   }
-  if (!imageUrl) {
-    imageUrl = "https://via.placeholder.com/600x400?text=No+Image";
-  }
+
+  // ✅ Reliable fallback (no DNS error)
+  const fallbackImage =
+    "https://dummyimage.com/600x400/e5e7eb/1f2937.png&text=No+Image";
 
   // ✅ Check ownership (only creator can edit/delete)
   const isOwner =
@@ -39,9 +42,10 @@ const RecipeHeader = ({
       {/* Recipe Image */}
       <div className="relative h-64 md:h-80 lg:h-96 overflow-hidden">
         <Image
-          src={imageUrl}
+          src={imageUrl || fallbackImage}
           alt={recipe?.title || "Recipe image"}
           className="w-full h-full object-cover"
+          onError={(e) => (e.target.src = fallbackImage)}
         />
 
         {/* ❤️ Favorite Button */}
