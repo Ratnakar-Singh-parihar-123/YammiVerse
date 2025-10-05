@@ -11,6 +11,7 @@ import Icon from "../../components/AppIcon";
 
 const AddRecipe = () => {
   const navigate = useNavigate();
+
   const [isLoading, setIsLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [formData, setFormData] = useState({
@@ -26,11 +27,9 @@ const AddRecipe = () => {
   const [ingredients, setIngredients] = useState([
     { id: 1, name: "", quantity: "", unit: "" },
   ]);
-
   const [instructions, setInstructions] = useState([
     { id: 1, step: 1, text: "" },
   ]);
-
   const [errors, setErrors] = useState({});
 
   // ✅ Track unsaved changes
@@ -72,18 +71,18 @@ const AddRecipe = () => {
 
     const validInstructions = instructions.filter((inst) => inst.text.trim());
     if (validInstructions.length === 0)
-      newErrors.instructions = "At least one instruction is required";
+      newErrors.instructions = "At least one instruction step is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // ✅ Save handler — sends multipart/form-data to Cloudinary
+  // ✅ Cloudinary FormData submission
   const handleSave = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
     setIsLoading(true);
+
     try {
       const token =
         localStorage.getItem("recipeHub-token") ||
@@ -94,32 +93,27 @@ const AddRecipe = () => {
       );
       const validInstructions = instructions.filter((inst) => inst.text.trim());
 
-      // 🧾 Prepare multipart form data
-      const formDataToSend = new FormData();
-      formDataToSend.append("title", formData.title);
-      formDataToSend.append("cookingTime", formData.cookingTime);
-      formDataToSend.append("servings", formData.servings);
-      formDataToSend.append("difficulty", formData.difficulty);
-      formDataToSend.append("category", formData.category);
-      formDataToSend.append("description", formData.description);
-      formDataToSend.append("ingredients", JSON.stringify(validIngredients));
-      formDataToSend.append("instructions", JSON.stringify(validInstructions));
+      const payload = new FormData();
+      payload.append("title", formData.title);
+      payload.append("cookingTime", formData.cookingTime);
+      payload.append("servings", formData.servings);
+      payload.append("difficulty", formData.difficulty);
+      payload.append("category", formData.category);
+      payload.append("description", formData.description);
+      payload.append("ingredients", JSON.stringify(validIngredients));
+      payload.append("instructions", JSON.stringify(validInstructions));
       if (formData.image) {
-        formDataToSend.append("image", formData.image); // 👈 sends actual file
+        payload.append("image", formData.image); // 👈 must match upload.single("image")
       }
 
-      await axios.post(
-        "https://yammiverse.onrender.com/api/recipes",
-        formDataToSend,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      await axios.post("https://yammiverse.onrender.com/api/recipes", payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
-      navigate("/home", { state: { message: "Recipe created successfully!" } });
+      navigate("/home", { state: { message: "Recipe added successfully!" } });
     } catch (error) {
       console.error("❌ Error saving recipe:", error);
       setErrors({
@@ -132,7 +126,6 @@ const AddRecipe = () => {
     }
   };
 
-  // Options
   const difficultyOptions = [
     { value: "easy", label: "Easy" },
     { value: "medium", label: "Medium" },
@@ -182,7 +175,6 @@ const AddRecipe = () => {
               <Icon name="Info" size={20} />
               <span>Basic Information</span>
             </h2>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
                 <Input
@@ -195,7 +187,6 @@ const AddRecipe = () => {
                   required
                 />
               </div>
-
               <Input
                 label="Cooking Time"
                 type="text"
@@ -207,7 +198,6 @@ const AddRecipe = () => {
                 error={errors.cookingTime}
                 required
               />
-
               <Input
                 label="Servings"
                 type="number"
@@ -218,7 +208,6 @@ const AddRecipe = () => {
                 min="1"
                 required
               />
-
               {/* Difficulty */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
@@ -238,7 +227,6 @@ const AddRecipe = () => {
                   ))}
                 </select>
               </div>
-
               {/* Category */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
@@ -264,7 +252,6 @@ const AddRecipe = () => {
                   </p>
                 )}
               </div>
-
               {/* Description */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-foreground mb-2">
