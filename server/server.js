@@ -51,7 +51,7 @@ uploadDirs.forEach((dir) => {
 
 // ✅ Serve static files
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
-app.use("/images", express.static(path.join(__dirname, "public/images"))); // 👈 FIX for recipe images
+app.use("/images", express.static(path.join(__dirname, "public/images"))); // 👈 for recipe images
 app.use(express.static("public"));
 
 // ✅ API Routes
@@ -59,12 +59,19 @@ app.use("/api/users", require("./routes/user"));
 app.use("/api/recipes", require("./routes/recipe"));
 app.use("/api/favorites", require("./routes/favorite"));
 
+// -------------------------
 // ✅ Serve React frontend (AFTER APIs)
+// -------------------------
 const frontendPath = path.join(__dirname, "../client/build");
 app.use(express.static(frontendPath));
 
-app.get("*", (req, res, next) => {
-  if (!req.path.startsWith("/api") && !req.path.startsWith("/uploads") && !req.path.startsWith("/images")) {
+// ✅ FIX: Express v5 doesn’t allow "*" — use "/*"
+app.get("/*", (req, res, next) => {
+  if (
+    !req.path.startsWith("/api") &&
+    !req.path.startsWith("/uploads") &&
+    !req.path.startsWith("/images")
+  ) {
     res.sendFile(path.resolve(frontendPath, "index.html"));
   } else {
     next();
@@ -74,7 +81,9 @@ app.get("*", (req, res, next) => {
 // ✅ Global Error Handler
 app.use((err, req, res, next) => {
   console.error("🔥 Error:", err.message);
-  res.status(500).json({ message: "Something went wrong!", error: err.message });
+  res
+    .status(500)
+    .json({ message: "Something went wrong!", error: err.message });
 });
 
 // ✅ Start Server
