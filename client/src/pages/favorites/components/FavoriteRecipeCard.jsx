@@ -6,24 +6,30 @@ import Image from "../../../components/AppImage";
 const FavoriteRecipeCard = React.memo(({ recipe, onToggleFavorite }) => {
   if (!recipe) return null;
 
+  // 🔹 Handle favorite toggle
   const handleFavoriteClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
     onToggleFavorite?.(recipe?._id);
   };
 
-  // ✅ Normalize image URL (Cloudinary or local upload)
-  let imageUrl = recipe?.coverImage || recipe?.image || "";
-  if (imageUrl && !imageUrl.startsWith("http")) {
-    imageUrl = `https://yammiverse.onrender.com${
-      imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`
-    }`;
-  }
+  // ✅ Safe & consistent image handling
+  const getImageUrl = (imagePath) => {
+    const localFallback = "/assets/images/no_image.png";
+    const cdnFallback =
+      "https://placehold.co/600x400/e5e7eb/1f2937?text=No+Image";
 
-  // ✅ Reliable fallbacks
-  const localFallback = "/assets/images/no_image.png"; // ✅ must exist in public/assets/images/
-  const cdnFallback =
-    "https://dummyimage.com/600x400/e5e7eb/1f2937.png&text=No+Image";
+    if (!imagePath) return localFallback;
+
+    // ✅ Cloudinary / external URLs
+    if (imagePath.startsWith("http")) return imagePath;
+
+    // ✅ Local server upload
+    const baseUrl = "https://yammiverse.onrender.com";
+    return `${baseUrl}${imagePath.startsWith("/") ? imagePath : `/${imagePath}`}`;
+  };
+
+  const imageUrl = getImageUrl(recipe?.coverImage || recipe?.image);
 
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm hover:shadow-md transition-all duration-300 group overflow-hidden">
@@ -32,16 +38,17 @@ const FavoriteRecipeCard = React.memo(({ recipe, onToggleFavorite }) => {
         {/* 🔹 Image Section */}
         <div className="relative h-48 overflow-hidden">
           <Image
-            src={imageUrl || localFallback}
+            src={imageUrl}
             alt={recipe?.title || "Recipe image"}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             onError={(e) => {
-              // ✅ Fallback: first local → then CDN
+              // fallback order: cloudinary → local → CDN
               if (!e.target.dataset.fallbackTried) {
-                e.target.src = localFallback;
+                e.target.src = "/assets/images/no_image.png";
                 e.target.dataset.fallbackTried = "true";
               } else {
-                e.target.src = cdnFallback;
+                e.target.src =
+                  "https://placehold.co/600x400/e5e7eb/1f2937?text=No+Image";
               }
             }}
           />

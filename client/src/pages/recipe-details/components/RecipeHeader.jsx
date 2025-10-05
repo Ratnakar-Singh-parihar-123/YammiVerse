@@ -21,24 +21,30 @@ const RecipeHeader = ({
     );
   }
 
-  // ✅ Centralized Safe Image URL function
+  // ✅ Centralized safe image URL resolver (Cloudinary + Local + Fallback)
   const getImageUrl = (imagePath) => {
-    const fallback = "/assets/images/no_image.png"; // local fallback image
+    const localFallback = "/assets/images/no_image.png";
+    const remoteFallback =
+      "https://placehold.co/600x400/e5e7eb/1f2937?text=No+Image";
 
-    if (!imagePath) return fallback; // no image at all
+    if (!imagePath) return localFallback;
 
-    // ✅ If it's already a Cloudinary or external image
+    // ✅ If it's a valid Cloudinary or external image
     if (imagePath.startsWith("http")) return imagePath;
 
-    // ✅ Otherwise, assume it's from backend uploads
-    return `https://yammiverse.onrender.com${
+    // ✅ Otherwise, assume it's uploaded via backend (public/uploads)
+    const baseUrl = "https://yammiverse.onrender.com";
+    const fullPath = `${baseUrl}${
       imagePath.startsWith("/") ? imagePath : `/${imagePath}`
     }`;
+
+    // ✅ Some old data might have wrong format — ensure fallback safety
+    return fullPath || remoteFallback;
   };
 
   const imageUrl = getImageUrl(recipe?.coverImage || recipe?.image);
 
-  // ✅ Check ownership
+  // ✅ Owner check
   const isOwner =
     currentUser?._id?.toString() === recipe?.createdBy?._id?.toString();
 
@@ -51,7 +57,14 @@ const RecipeHeader = ({
           alt={recipe?.title || "Recipe image"}
           className="w-full h-full object-cover"
           onError={(e) => {
-            e.target.src = "/assets/images/no_image.png";
+            // fallback order: uploaded → local → CDN
+            if (!e.target.dataset.fallbackTried) {
+              e.target.src = "/assets/images/no_image.png";
+              e.target.dataset.fallbackTried = "true";
+            } else {
+              e.target.src =
+                "https://placehold.co/600x400/e5e7eb/1f2937?text=No+Image";
+            }
           }}
         />
 
@@ -133,6 +146,7 @@ const RecipeHeader = ({
                 <Icon name="Edit" size={16} className="mr-2" />
                 Edit
               </Link>
+
               <Button
                 variant="destructive"
                 iconName="Trash2"

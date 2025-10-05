@@ -34,7 +34,7 @@ const RecipeGrid = ({
       </div>
     );
 
-  // 🔹 No Recipes
+  // 🔹 Empty State
   if (!recipes || recipes.length === 0)
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -57,16 +57,20 @@ const RecipeGrid = ({
   const getImageUrl = (imagePath) => {
     const localFallback = "/assets/images/no_image.png";
     const cdnFallback =
-      "https://dummyimage.com/400x300/e5e7eb/1f2937.png&text=No+Image";
+      "https://placehold.co/400x300/e5e7eb/1f2937?text=No+Image";
 
     if (!imagePath) return localFallback;
 
-    // ✅ Cloudinary URLs
+    // ✅ Cloudinary or external URL
     if (imagePath.startsWith("http")) return imagePath;
 
-    // ✅ Backend Uploads (local paths)
+    // ✅ Backend upload path
     const baseUrl = "https://yammiverse.onrender.com";
-    return `${baseUrl}${imagePath.startsWith("/") ? imagePath : `/${imagePath}`}`;
+    const fullPath = `${baseUrl}${
+      imagePath.startsWith("/") ? imagePath : `/${imagePath}`
+    }`;
+
+    return fullPath || cdnFallback;
   };
 
   return (
@@ -87,18 +91,18 @@ const RecipeGrid = ({
               alt={recipe?.title || "Recipe image"}
               className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
               onError={(e) => {
-                // ✅ Local fallback first, then CDN fallback
+                // fallback order: uploaded → local → CDN
                 if (!e.target.dataset.fallbackTried) {
                   e.target.src = "/assets/images/no_image.png";
                   e.target.dataset.fallbackTried = "true";
                 } else {
                   e.target.src =
-                    "https://dummyimage.com/400x300/e5e7eb/1f2937.png&text=Image+Not+Found";
+                    "https://placehold.co/400x300/e5e7eb/1f2937?text=Image+Not+Found";
                 }
               }}
             />
 
-            {/* 🔹 Content */}
+            {/* 🔹 Recipe Content */}
             <div className="p-4 flex flex-col flex-grow">
               <h3 className="font-semibold text-lg text-foreground mb-2 line-clamp-1">
                 {recipe?.title}
@@ -120,6 +124,7 @@ const RecipeGrid = ({
                     >
                       Edit
                     </button>
+
                     <Button
                       size="sm"
                       variant="destructive"
