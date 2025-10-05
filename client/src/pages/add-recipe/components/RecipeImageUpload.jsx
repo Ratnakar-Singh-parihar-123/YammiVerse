@@ -1,40 +1,40 @@
-import React, { useState } from 'react';
-import Image from '../../../components/AppImage';
-import Icon from '../../../components/AppIcon';
-import Button from '../../../components/ui/Button';
+import React, { useState } from "react";
+import Image from "../../../components/AppImage";
+import Icon from "../../../components/AppIcon";
+import Button from "../../../components/ui/Button";
 
 const RecipeImageUpload = ({ image, onImageChange, error }) => {
   const [dragActive, setDragActive] = useState(false);
 
+  // ✅ Handle drag and drop events
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
+    if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
+    else if (e.type === "dragleave") setDragActive(false);
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-
-    if (e.dataTransfer?.files && e.dataTransfer.files[0]) {
+    if (e.dataTransfer?.files?.[0]) {
       const file = e.dataTransfer.files[0];
       if (file.type.startsWith("image/")) {
-        onImageChange(file); //  File object bhejna hai backend ko
+        onImageChange(file); // ✅ Send File object (not Base64)
+      } else {
+        alert("Please upload a valid image file (JPG, PNG, or WEBP)");
       }
     }
   };
 
+  // ✅ Handle file input
   const handleFileInput = (e) => {
-    if (e.target?.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.type.startsWith("image/")) {
-        onImageChange(file); //  File object bhejna hai backend ko
-      }
+    const file = e.target?.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      onImageChange(file);
+    } else if (file) {
+      alert("Only image files are allowed (JPG, PNG, WEBP).");
     }
   };
 
@@ -48,6 +48,7 @@ const RecipeImageUpload = ({ image, onImageChange, error }) => {
         Recipe Image
       </label>
 
+      {/* ✅ If Image Selected */}
       {image ? (
         <div className="relative">
           <div className="w-full h-64 rounded-lg overflow-hidden bg-muted">
@@ -57,6 +58,7 @@ const RecipeImageUpload = ({ image, onImageChange, error }) => {
               className="w-full h-full object-cover"
             />
           </div>
+
           <Button
             variant="destructive"
             size="sm"
@@ -69,11 +71,12 @@ const RecipeImageUpload = ({ image, onImageChange, error }) => {
           </Button>
         </div>
       ) : (
+        // ✅ Upload Drop Zone
         <div
           className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-micro ${
             dragActive
-              ? 'border-primary bg-primary/5'
-              : 'border-border hover:border-primary/50'
+              ? "border-primary bg-primary/5"
+              : "border-border hover:border-primary/50"
           }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
@@ -89,7 +92,11 @@ const RecipeImageUpload = ({ image, onImageChange, error }) => {
           <div className="space-y-4">
             <div className="flex justify-center">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-                <Icon name="ImagePlus" size={32} className="text-muted-foreground" />
+                <Icon
+                  name="ImagePlus"
+                  size={32}
+                  className="text-muted-foreground"
+                />
               </div>
             </div>
             <div>
@@ -97,16 +104,15 @@ const RecipeImageUpload = ({ image, onImageChange, error }) => {
                 Drop your image here, or click to browse
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                PNG, JPG, WEBP up to 10MB
+                JPG, PNG, WEBP — up to 10MB
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {error && (
-        <p className="text-sm text-destructive">{error}</p>
-      )}
+      {/* ✅ Error Message */}
+      {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
   );
 };

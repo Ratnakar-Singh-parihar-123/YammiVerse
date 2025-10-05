@@ -1,93 +1,70 @@
 const Recipes = require("../models/recipe");
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
 
-//  Ensure upload folder exists (Render par zaroori hai)
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const dir = "./public/images";
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, Date.now() + "-image" + ext);
+// ✅ Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.CLOUD_API_KEY,
+  api_secret: process.env.CLOUD_API_SECRET,
+});
+
+// ✅ Multer storage using Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "yammiverse_recipes",
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+    transformation: [{ quality: "auto", fetch_format: "auto" }],
   },
 });
 
-const upload = multer({
-  storage,
-  fileFilter: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    if ([".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only image files are allowed (jpg, jpeg, png, webp)"), false);
-    }
-  },
-});
+const upload = multer({ storage });
 
-//  Get all recipes
+// ==========================
+// 📘 CONTROLLERS
+// ==========================
+
+// ✅ Get all recipes
 const getRecipes = async (req, res) => {
   try {
     const recipes = await Recipes.find().populate("createdBy", "fullName email avatar");
-    res.json({ message: "Recipes fetched successfully", recipes });
+    res.json({ success: true, message: "Recipes fetched successfully", recipes });
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch recipes", error: error.message });
+    console.error("❌ Error fetching recipes:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch recipes", error: error.message });
   }
 };
 
-//  Get recipe by ID
+// ✅ Get single recipe
 const getRecipe = async (req, res) => {
   try {
     const recipe = await Recipes.findById(req.params.id).populate("createdBy", "fullName email avatar");
-    if (!recipe) return res.status(404).json({ message: "Recipe not found" });
-    res.json({ message: "Recipe fetched successfully", recipe });
+    if (!recipe) return res.status(404).json({ success: false, message: "Recipe not found" });
+    res.json({ success: true, message: "Recipe fetched successfully", recipe });
   } catch (error) {
-    res.status(400).json({ message: "Invalid recipe ID", error: error.message });
+    console.error("❌ Error fetching recipe:", error);
+    res.status(400).json({ success: false, message: "Invalid recipe ID", error: error.message });
   }
 };
 
-//  Add new recipe
+// ✅ Add new recipe (with Cloudinary upload)
 const addRecipe = async (req, res) => {
   try {
-    const {
-      title,
-      ingredients,
-      instructions,
-      cookingTime, //  field consistent
-      servings,
-      difficulty,
-      category,
-      description,
-    } = req.body;
+    const { title, ingredients, instructions, cookingTime, servings, difficulty, category, description } = req.body;
 
     if (!title || !ingredients || !instructions) {
-      return res.status(400).json({ message: "Title, ingredients and instructions are required" });
+      return res.status(400).json({ success: false, message: "Title, ingredients, and instructions are required" });
     }
 
     if (!req.user || !req.user.id) {
-      return res.status(401).json({ message: "Unauthorized: User not found" });
+      return res.status(401).json({ success: false, message: "Unauthorized: User not found" });
     }
 
-    //  Parse JSON fields safely
-    let parsedIngredients = [];
-    let parsedInstructions = [];
-
-    try {
-      parsedIngredients = typeof ingredients === "string" ? JSON.parse(ingredients) : ingredients;
-    } catch {
-      return res.status(400).json({ message: "Invalid ingredients format" });
-    }
-
-    try {
-      parsedInstructions = typeof instructions === "string" ? JSON.parse(instructions) : instructions;
-    } catch {
-      return res.status(400).json({ message: "Invalid instructions format" });
-    }
+    // 🧾 Parse JSON safely
+    const parsedIngredients = typeof ingredients === "string" ? JSON.parse(ingredients) : ingredients;
+    const parsedInstructions = typeof instructions === "string" ? JSON.parse(instructions) : instructions;
 
     const newRecipe = await Recipes.create({
       title,
@@ -98,25 +75,25 @@ const addRecipe = async (req, res) => {
       difficulty,
       category,
       description,
-      coverImage: req.file ? `/images/${req.file.filename}` : "",
+      coverImage: req.file ? req.file.path : "", // Cloudinary secure URL
       createdBy: req.user.id,
     });
 
-    res.status(201).json({ message: "Recipe added successfully", recipe: newRecipe });
+    res.status(201).json({ success: true, message: "Recipe added successfully", recipe: newRecipe });
   } catch (error) {
     console.error("❌ Error adding recipe:", error);
-    res.status(500).json({ message: "Failed to add recipe", error: error.message });
+    res.status(500).json({ success: false, message: "Failed to add recipe", error: error.message });
   }
 };
 
-//  Edit recipe
+// ✅ Edit recipe
 const editRecipe = async (req, res) => {
   try {
     const recipe = await Recipes.findById(req.params.id);
-    if (!recipe) return res.status(404).json({ message: "Recipe not found" });
+    if (!recipe) return res.status(404).json({ success: false, message: "Recipe not found" });
 
     if (req.user && recipe.createdBy.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Not authorized to edit this recipe" });
+      return res.status(403).json({ success: false, message: "Not authorized to edit this recipe" });
     }
 
     const parsedIngredients = req.body.ingredients
@@ -131,12 +108,9 @@ const editRecipe = async (req, res) => {
         : req.body.instructions
       : recipe.instructions;
 
+    // 🖼️ Handle Cloudinary update
     let coverImage = recipe.coverImage;
-    if (req.file) {
-      coverImage = `/images/${req.file.filename}`;
-    } else if (req.body.coverImage) {
-      coverImage = req.body.coverImage;
-    }
+    if (req.file) coverImage = req.file.path; // new upload
 
     const updatedRecipe = await Recipes.findByIdAndUpdate(
       req.params.id,
@@ -154,29 +128,38 @@ const editRecipe = async (req, res) => {
       { new: true }
     );
 
-    res.json({ message: "Recipe updated successfully", recipe: updatedRecipe });
+    res.json({ success: true, message: "Recipe updated successfully", recipe: updatedRecipe });
   } catch (error) {
-    res.status(500).json({ message: "Failed to update recipe", error: error.message });
+    console.error("❌ Error updating recipe:", error);
+    res.status(500).json({ success: false, message: "Failed to update recipe", error: error.message });
   }
 };
 
-//  Delete recipe
+// ✅ Delete recipe
 const deleteRecipe = async (req, res) => {
   try {
     const recipe = await Recipes.findById(req.params.id);
-    if (!recipe) return res.status(404).json({ message: "Recipe not found" });
+    if (!recipe) return res.status(404).json({ success: false, message: "Recipe not found" });
 
     if (req.user && recipe.createdBy.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Not authorized to delete this recipe" });
+      return res.status(403).json({ success: false, message: "Not authorized to delete this recipe" });
+    }
+
+    // Optional: delete image from Cloudinary
+    if (recipe.coverImage && recipe.coverImage.includes("cloudinary.com")) {
+      const publicId = recipe.coverImage.split("/").pop().split(".")[0];
+      await cloudinary.uploader.destroy(`yammiverse_recipes/${publicId}`);
     }
 
     await Recipes.deleteOne({ _id: req.params.id });
-    res.json({ message: "Recipe deleted successfully" });
+    res.json({ success: true, message: "Recipe deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Failed to delete recipe", error: error.message });
+    console.error("❌ Error deleting recipe:", error);
+    res.status(500).json({ success: false, message: "Failed to delete recipe", error: error.message });
   }
 };
 
+// ✅ Export all controllers
 module.exports = {
   getRecipes,
   getRecipe,

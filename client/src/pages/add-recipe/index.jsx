@@ -13,7 +13,6 @@ const AddRecipe = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
   const [formData, setFormData] = useState({
     title: "",
     cookingTime: "",
@@ -24,8 +23,14 @@ const AddRecipe = () => {
     image: null,
   });
 
-  const [ingredients, setIngredients] = useState([{ id: 1, name: "", quantity: "", unit: "" }]);
-  const [instructions, setInstructions] = useState([{ id: 1, step: 1, text: "" }]);
+  const [ingredients, setIngredients] = useState([
+    { id: 1, name: "", quantity: "", unit: "" },
+  ]);
+
+  const [instructions, setInstructions] = useState([
+    { id: 1, step: 1, text: "" },
+  ]);
+
   const [errors, setErrors] = useState({});
 
   // ✅ Track unsaved changes
@@ -42,7 +47,7 @@ const AddRecipe = () => {
     setHasUnsavedChanges(hasChanges);
   }, [formData, ingredients, instructions]);
 
-  // ✅ Input change handler
+  // ✅ Input handler
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
@@ -52,9 +57,12 @@ const AddRecipe = () => {
   const validateForm = () => {
     const newErrors = {};
     if (!formData.title.trim()) newErrors.title = "Recipe title is required";
-    if (!formData.cookingTime.trim()) newErrors.cookingTime = "Cooking time is required";
-    if (!formData.servings.trim()) newErrors.servings = "Number of servings is required";
-    if (!formData.category.trim()) newErrors.category = "Recipe category is required";
+    if (!formData.cookingTime.trim())
+      newErrors.cookingTime = "Cooking time is required";
+    if (!formData.servings.trim())
+      newErrors.servings = "Number of servings is required";
+    if (!formData.category.trim())
+      newErrors.category = "Recipe category is required";
 
     const validIngredients = ingredients.filter(
       (ing) => ing.name.trim() && ing.quantity.trim()
@@ -64,55 +72,52 @@ const AddRecipe = () => {
 
     const validInstructions = instructions.filter((inst) => inst.text.trim());
     if (validInstructions.length === 0)
-      newErrors.instructions = "At least one instruction step is required";
+      newErrors.instructions = "At least one instruction is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // ✅ Save handler (Cloudinary-ready)
+  // ✅ Save handler — sends multipart/form-data to Cloudinary
   const handleSave = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-    setIsLoading(true);
 
+    setIsLoading(true);
     try {
-      // Convert image → Base64
-      let imageBase64 = null;
-      if (formData.image instanceof File) {
-        imageBase64 = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.readAsDataURL(formData.image);
-        });
-      }
+      const token =
+        localStorage.getItem("recipeHub-token") ||
+        sessionStorage.getItem("recipeHub-token");
 
       const validIngredients = ingredients.filter(
         (ing) => ing.name.trim() && ing.quantity.trim()
       );
       const validInstructions = instructions.filter((inst) => inst.text.trim());
 
-      const token =
-        localStorage.getItem("recipeHub-token") ||
-        sessionStorage.getItem("recipeHub-token");
+      // 🧾 Prepare multipart form data
+      const formDataToSend = new FormData();
+      formDataToSend.append("title", formData.title);
+      formDataToSend.append("cookingTime", formData.cookingTime);
+      formDataToSend.append("servings", formData.servings);
+      formDataToSend.append("difficulty", formData.difficulty);
+      formDataToSend.append("category", formData.category);
+      formDataToSend.append("description", formData.description);
+      formDataToSend.append("ingredients", JSON.stringify(validIngredients));
+      formDataToSend.append("instructions", JSON.stringify(validInstructions));
+      if (formData.image) {
+        formDataToSend.append("image", formData.image); // 👈 sends actual file
+      }
 
-      const payload = {
-        title: formData.title,
-        cookingTime: formData.cookingTime,
-        servings: formData.servings,
-        difficulty: formData.difficulty,
-        category: formData.category,
-        description: formData.description,
-        ingredients: JSON.stringify(validIngredients),
-        instructions: JSON.stringify(validInstructions),
-        imageBase64, // 👈 Cloudinary image data
-      };
-
-      await axios.post("https://yammiverse.onrender.com/api/recipes", payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await axios.post(
+        "https://yammiverse.onrender.com/api/recipes",
+        formDataToSend,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
 
       navigate("/home", { state: { message: "Recipe created successfully!" } });
     } catch (error) {
@@ -127,6 +132,7 @@ const AddRecipe = () => {
     }
   };
 
+  // Options
   const difficultyOptions = [
     { value: "easy", label: "Easy" },
     { value: "medium", label: "Medium" },
@@ -176,6 +182,7 @@ const AddRecipe = () => {
               <Icon name="Info" size={20} />
               <span>Basic Information</span>
             </h2>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
                 <Input
@@ -188,6 +195,7 @@ const AddRecipe = () => {
                   required
                 />
               </div>
+
               <Input
                 label="Cooking Time"
                 type="text"
@@ -199,6 +207,7 @@ const AddRecipe = () => {
                 error={errors.cookingTime}
                 required
               />
+
               <Input
                 label="Servings"
                 type="number"
@@ -209,6 +218,8 @@ const AddRecipe = () => {
                 min="1"
                 required
               />
+
+              {/* Difficulty */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Difficulty Level *
@@ -227,6 +238,8 @@ const AddRecipe = () => {
                   ))}
                 </select>
               </div>
+
+              {/* Category */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Category *
@@ -251,6 +264,8 @@ const AddRecipe = () => {
                   </p>
                 )}
               </div>
+
+              {/* Description */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Description
@@ -307,7 +322,7 @@ const AddRecipe = () => {
             />
           </div>
 
-          {/* Form Actions */}
+          {/* Actions */}
           <div className="bg-card rounded-lg border border-border p-6">
             {errors.submit && (
               <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">

@@ -1,40 +1,41 @@
-import React from 'react';
-import Icon from '../../../components/AppIcon';
+import React from "react";
+import Icon from "../../../components/AppIcon";
 
-const FavoritesHeader = ({ favoriteCount, searchQuery, onSearchChange }) => {
+const FavoritesHeader = ({ favoriteCount = 0, searchQuery = "", onSearchChange }) => {
   return (
-    <div className="mb-8">
+    <header className="mb-8">
       <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+        {/* 🔹 Title & Subtitle */}
         <div>
           <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
             My Favorites
           </h1>
           <p className="text-muted-foreground">
-            {favoriteCount > 0 
-              ? `${favoriteCount} recipe${favoriteCount !== 1 ? 's' : ''} saved to your collection`
-              : 'Start building your personal recipe collection'
-            }
+            {favoriteCount > 0
+              ? `${favoriteCount} recipe${favoriteCount !== 1 ? "s" : ""} saved in your collection`
+              : "You haven’t saved any recipes yet. Start adding your favorites!"}
           </p>
         </div>
-        
+
+        {/* 🔹 Search Bar (Visible only if favorites exist) */}
         {favoriteCount > 0 && (
           <div className="relative w-full md:w-80">
-            <Icon 
-              name="Search" 
-              size={20} 
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+            <Icon
+              name="Search"
+              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
             />
             <input
               type="text"
-              placeholder="Search your favorites..."
+              placeholder="Search your favorite recipes..."
               value={searchQuery}
-              onChange={(e) => onSearchChange(e?.target?.value)}
-              className="w-full pl-10 pr-4 py-3 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-micro"
+              onChange={(e) => onSearchChange?.(e.target.value)}
+              className="w-full h-11 pl-10 pr-4 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/80 focus:border-transparent transition-all duration-200"
             />
           </div>
         )}
       </div>
-    </div>
+    </header>
   );
 };
 
