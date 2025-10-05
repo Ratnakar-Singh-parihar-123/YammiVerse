@@ -1,57 +1,25 @@
-const mongoose = require("mongoose");
+// routes/recipe.js
+const express = require("express");
+const router = express.Router();
+const {
+  getRecipes,
+  getRecipe,
+  addRecipe,
+  editRecipe,
+  deleteRecipe,
+  upload,
+} = require("../controllers/recipeController");
+const verifyToken = require("../middleware/authMiddleware");
 
-const recipeSchema = new mongoose.Schema(
-  {
-    title: {
-      type: String,
-      required: [true, "Recipe title is required"],
-      trim: true,
-    },
-    ingredients: [
-      {
-        name: { type: String, required: true },
-        quantity: { type: String, required: true },
-        unit: { type: String, default: "" },
-      },
-    ],
-    instructions: [
-      {
-        step: { type: Number, required: true },
-        text: { type: String, required: true },
-      },
-    ],
-    cookingTime: {   //  yehi naam consistent rahega
-      type: String,
-      default: "",
-    },
-    servings: {
-      type: Number,
-      default: 1,
-    },
-    difficulty: {
-      type: String,
-      enum: ["easy", "medium", "hard"],
-      default: "medium",
-    },
-    category: {
-      type: String,
-      default: "",
-    },
-    description: {
-      type: String,
-      default: "",
-    },
-    coverImage: {
-      type: String,
-      default: "",
-    },
-    createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-  },
-  { timestamps: true }
-);
+router.get("/", getRecipes);
+router.get("/:id", getRecipe);
+router.post("/", verifyToken, upload.single("image"), addRecipe);
+router.put("/:id", verifyToken, upload.single("image"), editRecipe);
+router.delete("/:id", verifyToken, deleteRecipe);
 
-module.exports = mongoose.model("Recipe", recipeSchema);
+// fallback for unmatched recipe routes
+router.use((req, res) => {
+  res.status(404).json({ success: false, message: "Recipe route not found" });
+});
+
+module.exports = router;
