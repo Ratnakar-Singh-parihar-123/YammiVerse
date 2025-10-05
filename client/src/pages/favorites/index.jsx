@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import axios from "axios";
 import TopNavigation from "../../components/ui/TopNavigation";
 import FavoritesHeader from "./components/FavoritesHeader";
@@ -13,71 +13,83 @@ const FavoritesPage = () => {
   const [favoriteRecipes, setFavoriteRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const token = localStorage.getItem("recipeHub-token");
+  const token =
+    localStorage.getItem("recipeHub-token") ||
+    sessionStorage.getItem("recipeHub-token");
 
-  //  Fetch favorites from backend
-  useEffect(() => {
-    const fetchFavorites = async () => {
-      try {
-        setLoading(true);
-        const res = await axios.get("https://yammiverse.onrender.com/api/favorites", {
+  // ✅ Fetch Favorites (wrapped in useCallback for reusability)
+  const fetchFavorites = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(
+        "https://yammiverse.onrender.com/api/favorites",
+        {
           headers: { Authorization: `Bearer ${token}` },
-        });
-        setFavoriteRecipes(res.data?.favorites || []);
-      } catch (error) {
-        console.error("Failed to fetch favorites:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (token) fetchFavorites();
+        }
+      );
+      setFavoriteRecipes(res.data?.favorites || []);
+    } catch (error) {
+      console.error("❌ Failed to fetch favorites:", error);
+    } finally {
+      setLoading(false);
+    }
   }, [token]);
 
-  //  Toggle Favorite (Remove from list)
+  useEffect(() => {
+    if (token) fetchFavorites();
+  }, [fetchFavorites, token]);
+
+  // ✅ Toggle Favorite (instant update + backend sync)
   const handleToggleFavorite = async (recipeId) => {
     try {
-      await axios.delete(`https://yammiverse.onrender.com/api/favorites/${recipeId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      // Remove from local state
-      setFavoriteRecipes((prev) =>
-        prev?.filter((recipe) => recipe?._id !== recipeId)
-      );
+      const isFavorite = favoriteRecipes.some((r) => r._id === recipeId);
+
+      // Optimistic UI update (instant feel)
+      if (isFavorite) {
+        setFavoriteRecipes((prev) =>
+          prev.filter((recipe) => recipe._id !== recipeId)
+        );
+        await axios.delete(
+          `https://yammiverse.onrender.com/api/favorites/${recipeId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } else {
+        await axios.post(
+          `https://yammiverse.onrender.com/api/favorites/${recipeId}`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        // fetch again to sync
+        fetchFavorites();
+      }
     } catch (error) {
-      console.error("Failed to remove favorite:", error);
+      console.error("❌ Failed to toggle favorite:", error);
     }
   };
 
-  //  Filter + Sort Recipes
+  // ✅ Filter + Sort Favorites
   const filteredAndSortedRecipes = useMemo(() => {
     let filtered = favoriteRecipes;
 
-    // 🔍 Search filter (title + description + category)
-    if (searchQuery?.trim()) {
-      filtered = filtered?.filter(
-        (recipe) =>
-          recipe?.title?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
-          recipe?.description
-            ?.toLowerCase()
-            ?.includes(searchQuery.toLowerCase()) ||
-          recipe?.category?.toLowerCase()?.includes(searchQuery.toLowerCase())
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(
+        (r) =>
+          r.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          r.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          r.category?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
-    // 🎯 Custom filter
     if (filterBy !== "all") {
-      filtered = filtered?.filter((recipe) => {
-        const cookingTime = parseInt(recipe?.cookingTime);
-
+      filtered = filtered.filter((r) => {
+        const time = parseInt(r.cookingTime);
         switch (filterBy) {
           case "quick30":
-            return !isNaN(cookingTime) && cookingTime <= 30;
-
+            return !isNaN(time) && time <= 30;
           case "easy":
           case "medium":
           case "hard":
-            return recipe?.difficulty?.toLowerCase() === filterBy;
-
+            return r.difficulty?.toLowerCase() === filterBy;
           case "breakfast":
           case "lunch":
           case "dinner":
@@ -87,33 +99,25 @@ const FavoritesPage = () => {
           case "side":
           case "dessert":
           case "beverage":
-            return recipe?.category?.toLowerCase() === filterBy;
-
+            return r.category?.toLowerCase() === filterBy;
           default:
             return true;
         }
       });
     }
 
-    // 🔃 Sorting
-    const sorted = [...filtered]?.sort((a, b) => {
+    const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "alphabetical":
-          return a?.title?.localeCompare(b?.title);
-
+          return a.title.localeCompare(b.title);
         case "cookingTime":
-          return parseInt(a?.cookingTime) - parseInt(b?.cookingTime);
-
+          return parseInt(a.cookingTime) - parseInt(b.cookingTime);
         case "difficulty":
-          const difficultyOrder = { easy: 1, medium: 2, hard: 3 };
-          return (
-            (difficultyOrder?.[a?.difficulty?.toLowerCase()] || 99) -
-            (difficultyOrder?.[b?.difficulty?.toLowerCase()] || 99)
-          );
-
+          const order = { easy: 1, medium: 2, hard: 3 };
+          return (order[a.difficulty] || 99) - (order[b.difficulty] || 99);
         case "recent":
         default:
-          return new Date(b?.createdAt) - new Date(a?.createdAt);
+          return new Date(b.createdAt) - new Date(a.createdAt);
       }
     });
 
@@ -124,36 +128,32 @@ const FavoritesPage = () => {
     <div className="min-h-screen bg-background">
       <TopNavigation />
       <main className="container mx-auto px-4 py-8">
-        {/* Header with Search */}
+        {/* Header */}
         <FavoritesHeader
-          favoriteCount={favoriteRecipes?.length}
+          favoriteCount={favoriteRecipes.length}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
         />
 
-        {/* Loader */}
         {loading ? (
           <div className="text-center py-12 text-muted-foreground">
             Loading favorites...
           </div>
-        ) : favoriteRecipes?.length === 0 ? (
+        ) : favoriteRecipes.length === 0 ? (
           <EmptyFavorites />
         ) : (
           <>
-            {/* Filters & Sorting */}
             <FavoritesFilters
               sortBy={sortBy}
               onSortChange={setSortBy}
               filterBy={filterBy}
               onFilterChange={setFilterBy}
-              totalCount={filteredAndSortedRecipes?.length}
+              totalCount={filteredAndSortedRecipes.length}
             />
-
-            {/* No results after filters */}
-            {filteredAndSortedRecipes?.length === 0 ? (
+            {filteredAndSortedRecipes.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-muted-foreground text-lg mb-4">
-                  No recipes match your current filters
+                  No recipes match your filters
                 </p>
                 <button
                   onClick={() => {
@@ -161,7 +161,7 @@ const FavoritesPage = () => {
                     setFilterBy("all");
                     setSortBy("recent");
                   }}
-                  className="text-primary hover:text-primary/80 font-medium transition-micro"
+                  className="text-primary hover:text-primary/80 font-medium transition"
                 >
                   Clear all filters
                 </button>

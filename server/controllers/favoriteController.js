@@ -1,19 +1,52 @@
-const User = require("../models/user");
+const Favorite = require("../models/favorite");
 const Recipe = require("../models/recipe");
 
-//  Get all favorites of logged-in user
+// ✅ Get all favorites for the logged-in user
 const getFavorites = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).populate("favorites");
-    if (!user) return res.status(404).json({ message: "User not found" });
+    const favorites = await Favorite.find({ user: req.user.id })
+      .populate({
+        path: "recipe",
+        populate: { path: "createdBy", select: "fullName avatar email" },
+      })
+      .sort({ createdAt: -1 });
 
-    res.json({ favorites: user.favorites });
+    // Base URL for images
+    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
+
+    // Format response
+    const formattedFavorites = favorites.map((fav) => {
+      const recipe = fav.recipe;
+      return {
+        _id: recipe._id,
+        title: recipe.title,
+        description: recipe.description,
+        category: recipe.category,
+        cookingTime: recipe.cookingTime,
+        servings: recipe.servings,
+        difficulty: recipe.difficulty,
+        createdBy: recipe.createdBy,
+        createdAt: recipe.createdAt,
+        coverImage: recipe.coverImage
+          ? `${baseUrl}${recipe.coverImage.replace(/\\/g, "/")}`
+          : null,
+      };
+    });
+
+    res.status(200).json({
+      message: "Favorites fetched successfully",
+      favorites: formattedFavorites,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch favorites", error: error.message });
+    console.error("❌ Error fetching favorites:", error);
+    res.status(500).json({
+      message: "Failed to fetch favorites",
+      error: error.message,
+    });
   }
 };
 
-//  Add a recipe to favorites
+// ✅ Add a recipe to favorites
 const addFavorite = async (req, res) => {
   try {
     const { recipeId } = req.params;
@@ -22,37 +55,48 @@ const addFavorite = async (req, res) => {
     const recipe = await Recipe.findById(recipeId);
     if (!recipe) return res.status(404).json({ message: "Recipe not found" });
 
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ message: "User not found" });
+    // Check if already favorited
+    const existing = await Favorite.findOne({
+      user: req.user.id,
+      recipe: recipeId,
+    });
 
-    // Avoid duplicates
-    if (user.favorites.includes(recipeId)) {
+    if (existing) {
       return res.status(400).json({ message: "Recipe already in favorites" });
     }
 
-    user.favorites.push(recipeId);
-    await user.save();
-
-    res.status(201).json({ message: "Recipe added to favorites", favorites: user.favorites });
+    await Favorite.create({ user: req.user.id, recipe: recipeId });
+    res.status(201).json({ message: "Recipe added to favorites" });
   } catch (error) {
-    res.status(500).json({ message: "Failed to add favorite", error: error.message });
+    console.error("❌ Error adding favorite:", error);
+    res.status(500).json({
+      message: "Failed to add favorite",
+      error: error.message,
+    });
   }
 };
 
-//  Remove from favorites
+// ✅ Remove a recipe from favorites
 const removeFavorite = async (req, res) => {
   try {
     const { recipeId } = req.params;
 
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ message: "User not found" });
+    const favorite = await Favorite.findOneAndDelete({
+      user: req.user.id,
+      recipe: recipeId,
+    });
 
-    user.favorites = user.favorites.filter((fav) => fav.toString() !== recipeId);
-    await user.save();
+    if (!favorite) {
+      return res.status(404).json({ message: "Favorite not found" });
+    }
 
-    res.json({ message: "Recipe removed from favorites", favorites: user.favorites });
+    res.json({ message: "Recipe removed from favorites" });
   } catch (error) {
-    res.status(500).json({ message: "Failed to remove favorite", error: error.message });
+    console.error("❌ Error removing favorite:", error);
+    res.status(500).json({
+      message: "Failed to remove favorite",
+      error: error.message,
+    });
   }
 };
 
