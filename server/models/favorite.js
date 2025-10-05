@@ -4,12 +4,12 @@ const favoriteSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",   // ✅ user who marked favorite
+      ref: "User",   //  user who marked favorite
       required: true,
     },
     recipe: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Recipe", // ✅ recipe which is favorited
+      ref: "Recipe", //  recipe which is favorited
       required: true,
     },
   },

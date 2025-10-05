@@ -8,13 +8,31 @@ const {
   deleteRecipe,
   upload,
 } = require("../controllers/recipeController");
-const verifyToken = require("../middleware/authMiddleware");
+const authMiddleware = require("../middleware/authMiddleware");
 
-// Recipe Routes
+// ✅ Fetch all recipes (public)
 router.get("/", getRecipes);
+
+// ✅ Get single recipe by ID (public)
 router.get("/:id", getRecipe);
-router.post("/", verifyToken, upload.single("image"), addRecipe);
-router.put("/:id", verifyToken, upload.single("image"), editRecipe);
-router.delete("/:id", verifyToken, deleteRecipe);
+
+// ✅ Add new recipe (protected)
+router.post(
+  "/",
+  authMiddleware,
+  upload.single("image"), // 👈 field name MUST match frontend formData.append("image", file)
+  addRecipe
+);
+
+// ✅ Edit existing recipe (protected)
+router.put(
+  "/:id",
+  authMiddleware,
+  upload.single("image"), // optional image update
+  editRecipe
+);
+
+// ✅ Delete a recipe (protected)
+router.delete("/:id", authMiddleware, deleteRecipe);
 
 module.exports = router;
