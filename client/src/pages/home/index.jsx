@@ -14,6 +14,7 @@ import QuickStats from "./components/QuickStats";
 import FeaturedRecipes from "./components/FeaturedRecipes";
 import api from "../../utils/api";
 import { getAuthToken, getAuthUser } from "../../utils/auth";
+import FeaturedCreators from "./components/FeaturedCreators";
 
 /* ---------------- Small UI Helpers ---------------- */
 const BannerDot = ({ active, onClick }) => (
@@ -35,7 +36,7 @@ const ErrorBanner = ({ message, onRetry }) => (
   >
     <div className="flex items-start justify-between gap-4">
       <div className="text-destructive">
-        <p className="font-semibold text-sm">Something went wrong</p>
+        <p className="text-sm font-semibold">Something went wrong</p>
         <p className="text-xs sm:text-sm opacity-90">{message}</p>
       </div>
       {onRetry && (
@@ -59,7 +60,7 @@ const SectionTitle = ({ title, subtitle }) => (
     viewport={{ once: true }}
     className="mb-8 text-center"
   >
-    <h2 className="text-2xl sm:text-3xl font-heading font-bold text-foreground">
+    <h2 className="text-2xl font-bold sm:text-3xl font-heading text-foreground">
       {title}
     </h2>
     {subtitle && (
@@ -101,7 +102,7 @@ const HomePage = () => {
       "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1600&q=80",
       "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1600&q=80",
     ],
-    []
+    [],
   );
 
   /* -------- Fetch Data -------- */
@@ -203,7 +204,7 @@ const HomePage = () => {
       favoriteCount: favorites.length,
       recentlyAdded: allRecipes.filter((r) => r?.createdAt).length,
     }),
-    [favorites, allRecipes]
+    [favorites, allRecipes],
   );
 
   /* -------- Favorites Toggle Callback -------- */
@@ -212,7 +213,9 @@ const HomePage = () => {
       if (isFav) {
         return [...prev, id];
       }
-      return prev.filter((item) => (typeof item === "string" ? item !== id : item?._id !== id));
+      return prev.filter((item) =>
+        typeof item === "string" ? item !== id : item?._id !== id,
+      );
     });
   };
 
@@ -221,7 +224,7 @@ const HomePage = () => {
     <div className="min-h-screen bg-background">
       <TopNavigation />
 
-      <main className="container px-4 sm:px-6 py-6 sm:py-10 mx-auto">
+      <main className="container px-4 py-6 mx-auto sm:px-6 sm:py-10">
         {/* Hero Banner Section */}
         <section className="relative mb-16 h-[55vh] sm:h-[65vh] max-h-[550px] min-h-[380px] overflow-hidden rounded-2xl sm:rounded-3xl shadow-warm-lg">
           {images.map((img, i) => (
@@ -259,7 +262,7 @@ const HomePage = () => {
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.7 }}
-              className="max-w-3xl text-3xl sm:text-5xl md:text-6xl font-heading font-extrabold tracking-tight drop-shadow-md"
+              className="max-w-3xl text-3xl font-extrabold tracking-tight sm:text-5xl md:text-6xl font-heading drop-shadow-md"
             >
               Discover. Cook. Share. 🍲
             </motion.h1>
@@ -268,26 +271,27 @@ const HomePage = () => {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.7 }}
-              className="max-w-2xl mt-3 sm:mt-4 text-sm sm:text-lg text-gray-200 leading-relaxed font-normal"
+              className="max-w-2xl mt-3 text-sm font-normal leading-relaxed text-gray-200 sm:mt-4 sm:text-lg"
             >
-              Explore handcrafted recipes from food lovers around the globe and share your own masterpieces with the world.
+              Explore handcrafted recipes from food lovers around the globe and
+              share your own masterpieces with the world.
             </motion.p>
 
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.7 }}
-              className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-6 sm:mt-8"
+              className="flex flex-wrap items-center justify-center gap-3 mt-6 sm:gap-4 sm:mt-8"
             >
               <Link
                 to="/add-recipe"
-                className="px-6 py-3 text-sm sm:text-base font-semibold text-white rounded-xl shadow-lg bg-primary hover:bg-primary/90 transition-all hover:scale-102"
+                className="px-6 py-3 text-sm font-semibold text-white transition-all shadow-lg sm:text-base rounded-xl bg-primary hover:bg-primary/90 hover:scale-102"
               >
                 + Add Recipe
               </Link>
               <a
                 href="#recipes"
-                className="px-6 py-3 text-sm sm:text-base font-semibold text-white border border-white/50 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-all"
+                className="px-6 py-3 text-sm font-semibold text-white transition-all border sm:text-base border-white/50 backdrop-blur-sm rounded-xl hover:bg-white/20"
               >
                 Browse Recipes
               </a>
@@ -315,7 +319,7 @@ const HomePage = () => {
           </button>
 
           {/* Dots Indicator */}
-          <div className="absolute left-0 right-0 flex justify-center gap-2 bottom-4 sm:bottom-6 z-20">
+          <div className="absolute left-0 right-0 z-20 flex justify-center gap-2 bottom-4 sm:bottom-6">
             {images.map((_, i) => (
               <BannerDot
                 key={i}
@@ -369,6 +373,9 @@ const HomePage = () => {
             loading={loading}
             error={error}
           />
+        </section>
+        <section className="mb-16">
+          <FeaturedCreators />
         </section>
       </main>
     </div>
