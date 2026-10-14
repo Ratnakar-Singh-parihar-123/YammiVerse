@@ -24,6 +24,7 @@ connectDb();
 const allowedOrigins = [
   // Production frontend - Vercel
   "https://yammi-verse-navy.vercel.app",
+  "https://yammiverse.vercel.app",
 
   // Local development
   "http://localhost:3000",
