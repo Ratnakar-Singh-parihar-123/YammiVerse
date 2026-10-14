@@ -22,34 +22,46 @@ connectDb();
 // Allowed Frontend Origins
 // ========================================
 const allowedOrigins = [
+  // Production frontend - Vercel
+  "https://yammi-verse-navy.vercel.app",
+
+  // Local development
   "http://localhost:3000",
   "http://localhost:4028",
   "http://localhost:5173",
   "http://localhost:5000",
   "http://localhost:8000",
+
+  // Backend origin (if needed)
   "https://yammiverse.onrender.com",
 ];
 
 // ========================================
-// CORS Middleware
-// Keep this before API routes
+// CORS Configuration
+// Must be registered before API routes
 // ========================================
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests without an Origin header
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests without Origin, such as certain server-side calls
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
 
-      console.error("Blocked by CORS:", origin);
-      return callback(new Error(`Not allowed by CORS: ${origin}`));
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  }),
-);
+    console.error("Blocked by CORS:", origin);
+    return callback(new Error(`Not allowed by CORS: ${origin}`));
+  },
+
+  credentials: true,
+
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+
+  allowedHeaders: ["Content-Type", "Authorization"],
+
+  optionsSuccessStatus: 204,
+};
+
+// Apply CORS globally, including preflight requests
+app.use(cors(corsOptions));
 
 // ========================================
 // Body Parsers
@@ -67,8 +79,6 @@ app.use((req, res, next) => {
 
 // ========================================
 // Local Recipe Images
-// Files stored in server/public/images
-// Example URL: /images/filename.jpg
 // ========================================
 const imagesDirectory = path.join(__dirname, "public", "images");
 
@@ -97,7 +107,9 @@ const frontendPath = path.join(__dirname, "../client/build");
 
 app.use(express.static(frontendPath));
 
-// Express 5-compatible frontend fallback
+// ========================================
+// Frontend Fallback
+// ========================================
 app.use((req, res, next) => {
   if (
     req.method === "GET" &&
@@ -169,6 +181,7 @@ app.use((err, req, res, next) => {
 // Create HTTP Server & Attach Socket.IO
 // ========================================
 const httpServer = http.createServer(app);
+
 initSocket(httpServer, allowedOrigins);
 
 // ========================================
@@ -176,7 +189,8 @@ initSocket(httpServer, allowedOrigins);
 // ========================================
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Allowed frontend origins:`);
+  console.log("Allowed frontend origins:");
+
   allowedOrigins.forEach((origin) => {
     console.log(`- ${origin}`);
   });
