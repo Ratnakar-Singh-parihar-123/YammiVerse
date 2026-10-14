@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
+import api from "../../utils/api";
 import TopNavigation from "../../components/ui/TopNavigation";
 import Icon from "../../components/AppIcon";
 import Button from "../../components/ui/Button";
@@ -18,15 +18,7 @@ const EditRecipe = () => {
     const fetchRecipe = async () => {
       try {
         setIsLoading(true);
-        const token =
-          localStorage.getItem("recipeHub-token") ||
-          sessionStorage.getItem("recipeHub-token");
-
-        const res = await axios.get(
-          `https://yammiverse.onrender.com/api/recipes/${recipeId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
+        const res = await api.get(`/api/recipes/${recipeId}`);
         setRecipeData(res.data.recipe);
       } catch (err) {
         console.error("❌ Failed to fetch recipe:", err);
@@ -40,52 +32,8 @@ const EditRecipe = () => {
   }, [recipeId]);
 
   // 🔹 Save handler
-  const handleSaveRecipe = async (updatedRecipe) => {
-    try {
-      const token =
-        localStorage.getItem("recipeHub-token") ||
-        sessionStorage.getItem("recipeHub-token");
-
-      //  Convert to FormData
-      const formDataToSend = new FormData();
-      formDataToSend.append("title", updatedRecipe.title || "");
-      formDataToSend.append("cookingTime", updatedRecipe.cookingTime || "");
-      formDataToSend.append("servings", updatedRecipe.servings || 1);
-      formDataToSend.append("difficulty", updatedRecipe.difficulty || "medium");
-      formDataToSend.append("category", updatedRecipe.category || "");
-      formDataToSend.append("description", updatedRecipe.description || "");
-
-      if (updatedRecipe.image instanceof File) {
-        formDataToSend.append("image", updatedRecipe.image);
-      }
-
-      // Ingredients + Instructions ko stringify karna hoga
-      formDataToSend.append(
-        "ingredients",
-        JSON.stringify(updatedRecipe.ingredients || [])
-      );
-      formDataToSend.append(
-        "instructions",
-        JSON.stringify(updatedRecipe.instructions || [])
-      );
-
-      const res = await axios.put(
-        `https://yammiverse.onrender.com/api/recipes/${recipeId}`,
-        formDataToSend,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      setRecipeData(res.data.recipe);
-      return res.data.recipe;
-    } catch (err) {
-      console.error("❌ Failed to save recipe:", err);
-      throw err;
-    }
+  const handleSaveRecipe = (updatedRecipe) => {
+    setRecipeData(updatedRecipe);
   };
 
   const handleCancel = () => {

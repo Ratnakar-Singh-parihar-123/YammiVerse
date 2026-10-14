@@ -7,7 +7,11 @@ const getFavorites = async (req, res) => {
     const user = await User.findById(req.user.id).populate("favorites");
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    res.json({ favorites: user.favorites });
+    const validFavorites = (user.favorites || []).filter(
+      (item) => item !== null && item !== undefined
+    );
+
+    res.json({ favorites: validFavorites });
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch favorites", error: error.message });
   }

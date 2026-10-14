@@ -91,3 +91,13 @@ exports.resetPassword = async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+
+// 4) Admin Setup Status
+exports.adminSetupStatus = async (req, res) => {
+  try {
+    const adminExists = await User.exists({ role: "admin" });
+    return res.json({ success: true, available: !adminExists });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};

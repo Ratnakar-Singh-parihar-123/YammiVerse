@@ -1,104 +1,122 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import Image from '../../../components/AppImage';
-import Icon from '../../../components/AppIcon';
-import Button from '../../../components/ui/Button';
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import Image from "../../../components/AppImage";
+import Icon from "../../../components/AppIcon";
+import Button from "../../../components/ui/Button";
+import api, { getImageUrl } from "../../../utils/api";
+import { getAuthToken } from "../../../utils/auth";
 
-const RecipeCard = ({ recipe, isFavorite, onFavoriteUpdate }) => {
+const RecipeCard = ({ recipe, isFavorite = false, onFavoriteUpdate, currentUser }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [favorite, setFavorite] = useState(isFavorite);
+  const [isUpdatingFavorite, setIsUpdatingFavorite] = useState(false);
   const navigate = useNavigate();
-  const token = localStorage.getItem("recipeHub-token");
 
-  //  Backend Toggle Favorite
+  useEffect(() => {
+    setFavorite(isFavorite);
+  }, [isFavorite]);
+
+  // Backend Toggle Favorite
   const handleFavoriteClick = async (e) => {
     e?.preventDefault();
     e?.stopPropagation();
+
+    const token = getAuthToken();
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    if (isUpdatingFavorite) return;
+
+    setIsUpdatingFavorite(true);
     try {
       if (favorite) {
-        await axios.delete(`https://yammiverse.onrender.com/api/favorites/${recipe?._id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await api.delete(`/api/favorites/${recipe?._id}`);
         setFavorite(false);
-        onFavoriteUpdate && onFavoriteUpdate(recipe?._id, false);
+        if (onFavoriteUpdate) onFavoriteUpdate(recipe?._id, false);
       } else {
-        await axios.post(
-          `https://yammiverse.onrender.com/api/favorites/${recipe?._id}`,
-          {},
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await api.post(`/api/favorites/${recipe?._id}`);
         setFavorite(true);
-        onFavoriteUpdate && onFavoriteUpdate(recipe?._id, true);
+        if (onFavoriteUpdate) onFavoriteUpdate(recipe?._id, true);
       }
     } catch (err) {
       console.error("❌ Favorite toggle failed:", err);
+    } finally {
+      setIsUpdatingFavorite(false);
     }
   };
 
-  //  Difficulty Badge color
-  const getDifficultyColor = (difficulty) => {
+  // Difficulty Badge color
+  const getDifficultyBadge = (difficulty) => {
     switch (difficulty?.toLowerCase()) {
-      case 'easy':
-        return 'text-success bg-success/10';
-      case 'medium':
-        return 'text-warning bg-warning/10';
-      case 'hard':
-        return 'text-destructive bg-destructive/10';
+      case "easy":
+        return "text-success bg-success/15 border-success/30";
+      case "medium":
+        return "text-warning bg-warning/15 border-warning/30";
+      case "hard":
+        return "text-destructive bg-destructive/15 border-destructive/30";
       default:
-        return 'text-muted-foreground bg-muted';
+        return "text-muted-foreground bg-muted border-border";
     }
   };
 
-  //  Construct full image URL
-  const imageUrl = recipe?.image?.startsWith("http")
-    ? recipe?.image
-    : `https://yammiverse.onrender.com/${recipe?.image?.replace(/\\/g, "/")}`;
+  const imageUrl = getImageUrl(recipe?.coverImage || recipe?.image);
+  const isOwner =
+    currentUser?._id && recipe?.createdBy?._id &&
+    currentUser._id.toString() === recipe.createdBy._id.toString();
 
   return (
     <div
-      className="group bg-card rounded-lg border border-border overflow-hidden shadow-warm hover:shadow-warm-md transition-state"
+      className="overflow-hidden border rounded-xl group bg-card border-border shadow-warm hover:shadow-warm-lg transition-all duration-300 flex flex-col h-full"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Link to={`/recipes/${recipe?._id}`} className="block">
-        {/* Recipe Image */}
-        <div className="relative aspect-[4/3] overflow-hidden">
+      <Link to={`/recipes/${recipe?._id}`} className="block flex-1 flex flex-col">
+        {/* Recipe Image & Overlay Badges */}
+        <div className="relative aspect-[16/10] overflow-hidden bg-muted/40">
           <Image
             src={imageUrl}
-            alt={recipe?.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-state"
+            alt={recipe?.title || "Recipe"}
+            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
           />
 
           {/* ❤️ Favorite Button */}
           <button
+            type="button"
             onClick={handleFavoriteClick}
-            className="absolute top-3 right-3 w-10 h-10 bg-background/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-background transition-micro"
-            aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
+            disabled={isUpdatingFavorite}
+            className="absolute flex items-center justify-center w-9 h-9 rounded-full top-3 right-3 bg-background/85 backdrop-blur-md hover:bg-background transition-transform active:scale-90 shadow-md z-10"
+            aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
+            title={favorite ? "Remove from favorites" : "Save to favorites"}
           >
             <Icon
               name="Heart"
-              size={20}
-              className={favorite ? 'text-destructive fill-current' : 'text-muted-foreground'}
+              size={18}
+              className={
+                favorite
+                  ? "text-destructive fill-current"
+                  : "text-muted-foreground hover:text-foreground"
+              }
             />
           </button>
 
           {/* Difficulty Badge */}
           {recipe?.difficulty && (
-            <div className="absolute top-3 left-3">
+            <div className="absolute top-3 left-3 z-10">
               <span
-                className={`px-2 py-1 text-xs font-medium rounded-md ${getDifficultyColor(
+                className={`px-2.5 py-0.5 text-xs font-semibold rounded-md border uppercase tracking-wider ${getDifficultyBadge(
                   recipe?.difficulty
                 )}`}
               >
-                {recipe?.difficulty}
+                {recipe.difficulty}
               </span>
             </div>
           )}
 
-          {/* Quick Action Overlay */}
+          {/* Quick Action Overlay on hover */}
           {isHovered && (
-            <div className="absolute inset-0 bg-foreground/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-micro">
+            <div className="absolute inset-0 hidden sm:flex items-center justify-center bg-black/30 backdrop-blur-xs transition-opacity animate-fadeIn z-5">
               <Button
                 variant="secondary"
                 size="sm"
@@ -108,6 +126,7 @@ const RecipeCard = ({ recipe, isFavorite, onFavoriteUpdate }) => {
                   e?.preventDefault();
                   navigate(`/recipes/${recipe?._id}`);
                 }}
+                className="shadow-md font-semibold text-xs"
               >
                 View Recipe
               </Button>
@@ -116,35 +135,48 @@ const RecipeCard = ({ recipe, isFavorite, onFavoriteUpdate }) => {
         </div>
 
         {/* Recipe Content */}
-        <div className="p-4">
-          <h3 className="font-heading font-semibold text-lg text-foreground line-clamp-2 group-hover:text-primary transition-micro">
-            {recipe?.title}
-          </h3>
+        <div className="p-4 flex-1 flex flex-col justify-between">
+          <div>
+            {recipe?.category && (
+              <span className="text-[11px] font-semibold text-primary uppercase tracking-wider mb-1 block">
+                {recipe.category}
+              </span>
+            )}
 
-          {/* Recipe Meta */}
-          <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-            <div className="flex items-center gap-1">
-              <Icon name="Clock" size={16} />
-              <span>{recipe?.cookingTime} min</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Icon name="Users" size={16} />
-              <span>{recipe?.servings} servings</span>
-            </div>
-            {recipe?.cuisine && (
-              <div className="flex items-center gap-1">
-                <Icon name="MapPin" size={16} />
-                <span>{recipe?.cuisine}</span>
-              </div>
+            <h3 className="text-base sm:text-lg font-heading font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+              {recipe?.title}
+            </h3>
+
+            {recipe?.description && (
+              <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                {recipe.description}
+              </p>
             )}
           </div>
 
-          {/* Description */}
-          {recipe?.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-              {recipe?.description}
-            </p>
-          )}
+          {/* Recipe Meta */}
+          <div className="mt-4 pt-3 border-t border-border/70 flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center gap-3">
+              {recipe?.cookingTime && (
+                <div className="flex items-center gap-1">
+                  <Icon name="Clock" size={14} className="text-muted-foreground" />
+                  <span>{recipe.cookingTime}</span>
+                </div>
+              )}
+              {recipe?.servings && (
+                <div className="flex items-center gap-1">
+                  <Icon name="Users" size={14} className="text-muted-foreground" />
+                  <span>{recipe.servings} serv</span>
+                </div>
+              )}
+            </div>
+
+            {isOwner && (
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                Yours
+              </span>
+            )}
+          </div>
         </div>
       </Link>
     </div>

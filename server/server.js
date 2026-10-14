@@ -1,77 +1,183 @@
+const http = require("http");
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const path = require("path");
+const multer = require("multer");
+
 const connectDb = require("./config/connectionDb");
+const { initSocket } = require("./socket/socketManager");
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-//  Connect Database
+// ========================================
+// Connect MongoDB
+// ========================================
 connectDb();
 
-//  Middlewares
-app.use(express.json());
-
-//  Allowed Origins
+// ========================================
+// Allowed Frontend Origins
+// ========================================
 const allowedOrigins = [
-  "http://localhost:3000",      // React default
-  "http://localhost:5173",      // Vite default
-  "https://yammiverse.onrender.com" // Your deployed frontend
+  "http://localhost:3000",
+  "http://localhost:4028",
+  "http://localhost:5173",
+  "http://localhost:5000",
+  "http://localhost:8000",
+  "https://yammiverse.onrender.com",
 ];
 
-//  CORS Config
+// ========================================
+// CORS Middleware
+// Keep this before API routes
+// ========================================
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // Postman, curl
-      if (allowedOrigins.includes(origin)) {
+    origin: (origin, callback) => {
+      // Allow requests without an Origin header
+      if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      console.log("❌ Blocked by CORS:", origin);
-      return callback(new Error("Not allowed by CORS"));
+
+      console.error("Blocked by CORS:", origin);
+      return callback(new Error(`Not allowed by CORS: ${origin}`));
     },
     credentials: true,
-  })
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
 );
 
-//  Debug origin (optional, remove in production)
+// ========================================
+// Body Parsers
+// ========================================
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ========================================
+// Request Logger
+// ========================================
 app.use((req, res, next) => {
-  console.log("Request Origin:", req.headers.origin);
+  console.log(`${req.method} ${req.originalUrl}`);
   next();
 });
 
-//  Static files
-app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
-app.use(express.static("public"));
+// ========================================
+// Local Recipe Images
+// Files stored in server/public/images
+// Example URL: /images/filename.jpg
+// ========================================
+const imagesDirectory = path.join(__dirname, "public", "images");
 
-//  API Routes
+app.use("/images", express.static(imagesDirectory));
+
+// ========================================
+// Other Public Assets
+// ========================================
+app.use(express.static(path.join(__dirname, "public")));
+
+// ========================================
+// API Routes
+// ========================================
+app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/users", require("./routes/user"));
 app.use("/api/recipes", require("./routes/recipe"));
 app.use("/api/favorites", require("./routes/favorite"));
+app.use("/api/admin", require("./routes/admin"));
+app.use("/api/notifications", require("./routes/notification"));
+app.use("/api/user-notifications", require("./routes/userNotifications"));
 
-// -------------------------
-//  React frontend serve
-// -------------------------
-const frontendPath = path.join(__dirname, "../client/build"); // CRA -> build | Vite -> dist
+// ========================================
+// Frontend Build (if available)
+// ========================================
+const frontendPath = path.join(__dirname, "../client/build");
+
 app.use(express.static(frontendPath));
+
+// Express 5-compatible frontend fallback
 app.use((req, res, next) => {
-  if (req.method === "GET" && !req.path.startsWith("/api")) {
-    res.sendFile(path.resolve(frontendPath, "index.html"));
-  } else {
-    next();
+  if (
+    req.method === "GET" &&
+    !req.path.startsWith("/api") &&
+    !req.path.startsWith("/images")
+  ) {
+    return res.sendFile(path.join(frontendPath, "index.html"), (err) => {
+      if (err) {
+        next(err);
+      }
+    });
   }
+
+  next();
 });
 
-//  Error handler
+// ========================================
+// 404 Handler for Unmatched API Routes
+// ========================================
+app.use("/api", (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "API route not found",
+  });
+});
+
+// ========================================
+// Global Error Handler
+// ========================================
 app.use((err, req, res, next) => {
-  console.error("🔥 Error:", err.message);
-  res.status(500).json({ message: "Something went wrong!", error: err.message });
+  console.error("Server error:", err.message);
+
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  // Multer upload errors
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+
+  // Invalid image type
+  if (err.message === "Only JPG, JPEG, PNG and WEBP images are allowed") {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+
+  // CORS errors
+  if (err.message.startsWith("Not allowed by CORS")) {
+    return res.status(403).json({
+      success: false,
+      message: "Origin not allowed by CORS",
+    });
+  }
+
+  res.status(500).json({
+    success: false,
+    message: "Something went wrong",
+    error: process.env.NODE_ENV === "production" ? undefined : err.message,
+  });
 });
 
-//  Start Server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+// ========================================
+// Create HTTP Server & Attach Socket.IO
+// ========================================
+const httpServer = http.createServer(app);
+initSocket(httpServer, allowedOrigins);
+
+// ========================================
+// Start Server
+// ========================================
+httpServer.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Allowed frontend origins:`);
+  allowedOrigins.forEach((origin) => {
+    console.log(`- ${origin}`);
+  });
 });

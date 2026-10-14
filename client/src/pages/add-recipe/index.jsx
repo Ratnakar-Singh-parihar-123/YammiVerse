@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../../utils/api";
 import TopNavigation from "../../components/ui/TopNavigation";
 import Input from "../../components/ui/Input";
 import RecipeImageUpload from "./components/RecipeImageUpload";
@@ -47,7 +47,7 @@ const AddRecipe = () => {
         (ing) =>
           ing.name.trim() !== "" ||
           ing.quantity.trim() !== "" ||
-          ing.unit.trim() !== ""
+          ing.unit.trim() !== "",
       ) ||
       instructions.some((inst) => inst.text.trim() !== "");
     setHasUnsavedChanges(hasChanges);
@@ -74,14 +74,14 @@ const AddRecipe = () => {
 
     // Ingredients
     const validIngredients = ingredients.filter(
-      (ing) => ing.name.trim() !== "" && ing.quantity.trim() !== ""
+      (ing) => ing.name.trim() !== "" && ing.quantity.trim() !== "",
     );
     if (validIngredients.length === 0)
       newErrors.ingredients = "At least one ingredient is required";
 
     // Instructions
     const validInstructions = instructions.filter(
-      (inst) => inst.text.trim() !== ""
+      (inst) => inst.text.trim() !== "",
     );
     if (validInstructions.length === 0)
       newErrors.instructions = "At least one instruction step is required";
@@ -90,7 +90,7 @@ const AddRecipe = () => {
     if (
       formData.cookingTime.trim() &&
       !/^\d+\s*(min|mins|minutes?|hr|hrs|hours?|h)$/i.test(
-        formData.cookingTime.trim()
+        formData.cookingTime.trim(),
       )
     ) {
       newErrors.cookingTime = 'Please use format like "30 mins" or "1 hour"';
@@ -116,10 +116,10 @@ const AddRecipe = () => {
 
     try {
       const validIngredients = ingredients.filter(
-        (ing) => ing.name.trim() !== "" && ing.quantity.trim() !== ""
+        (ing) => ing.name.trim() !== "" && ing.quantity.trim() !== "",
       );
       const validInstructions = instructions.filter(
-        (inst) => inst.text.trim() !== ""
+        (inst) => inst.text.trim() !== "",
       );
 
       const formDataToSend = new FormData();
@@ -137,20 +137,11 @@ const AddRecipe = () => {
       formDataToSend.append("ingredients", JSON.stringify(validIngredients));
       formDataToSend.append("instructions", JSON.stringify(validInstructions));
 
-      const token =
-        localStorage.getItem("recipeHub-token") ||
-        sessionStorage.getItem("recipeHub-token");
-
-      await axios.post(
-        "https://yammiverse.onrender.com/api/recipes",
-        formDataToSend,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await api.post("/api/recipes", formDataToSend, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       navigate("/home", { state: { message: "Recipe created successfully!" } });
     } catch (error) {
@@ -191,14 +182,14 @@ const AddRecipe = () => {
   return (
     <div className="min-h-screen bg-background">
       <TopNavigation />
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
+      <main className="container max-w-4xl px-4 py-8 mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center space-x-3 mb-2">
-            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+          <div className="flex items-center mb-2 space-x-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
               <Icon name="Plus" size={20} className="text-primary" />
             </div>
-            <h1 className="text-3xl font-heading font-bold text-foreground">
+            <h1 className="text-3xl font-bold font-heading text-foreground">
               Add New Recipe
             </h1>
           </div>
@@ -210,13 +201,13 @@ const AddRecipe = () => {
         {/* Form */}
         <form onSubmit={handleSave} className="space-y-8">
           {/* Basic Information */}
-          <div className="bg-card rounded-lg border border-border p-6 space-y-6">
-            <h2 className="text-xl font-heading font-semibold text-foreground flex items-center space-x-2">
+          <div className="p-6 space-y-6 border rounded-lg bg-card border-border">
+            <h2 className="flex items-center space-x-2 text-xl font-semibold font-heading text-foreground">
               <Icon name="Info" size={20} />
               <span>Basic Information</span>
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="md:col-span-2">
                 <Input
                   label="Recipe Title"
@@ -253,7 +244,7 @@ const AddRecipe = () => {
               />
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block mb-2 text-sm font-medium text-foreground">
                   Difficulty Level *
                 </label>
                 <select
@@ -261,7 +252,7 @@ const AddRecipe = () => {
                   onChange={(e) =>
                     handleInputChange("difficulty", e.target.value)
                   }
-                  className="w-full h-10 px-3 py-2 bg-input border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                  className="w-full h-10 px-3 py-2 text-sm border rounded-md bg-input border-border focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                 >
                   {difficultyOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -272,7 +263,7 @@ const AddRecipe = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block mb-2 text-sm font-medium text-foreground">
                   Category *
                 </label>
                 <select
@@ -280,7 +271,7 @@ const AddRecipe = () => {
                   onChange={(e) =>
                     handleInputChange("category", e.target.value)
                   }
-                  className="w-full h-10 px-3 py-2 bg-input border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                  className="w-full h-10 px-3 py-2 text-sm border rounded-md bg-input border-border focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                 >
                   <option value="">Select a category</option>
                   {categoryOptions.map((category) => (
@@ -290,14 +281,14 @@ const AddRecipe = () => {
                   ))}
                 </select>
                 {errors.category && (
-                  <p className="text-sm text-destructive mt-1">
+                  <p className="mt-1 text-sm text-destructive">
                     {errors.category}
                   </p>
                 )}
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block mb-2 text-sm font-medium text-foreground">
                   Description
                 </label>
                 <textarea
@@ -307,15 +298,15 @@ const AddRecipe = () => {
                     handleInputChange("description", e.target.value)
                   }
                   rows={3}
-                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border rounded-md resize-none bg-input border-border focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                 />
               </div>
             </div>
           </div>
 
           {/* Recipe Image */}
-          <div className="bg-card rounded-lg border border-border p-6">
-            <h2 className="text-xl font-heading font-semibold text-foreground flex items-center space-x-2 mb-6">
+          <div className="p-6 border rounded-lg bg-card border-border">
+            <h2 className="flex items-center mb-6 space-x-2 text-xl font-semibold font-heading text-foreground">
               <Icon name="Camera" size={20} />
               <span>Recipe Photo</span>
             </h2>
@@ -327,8 +318,8 @@ const AddRecipe = () => {
           </div>
 
           {/* Ingredients */}
-          <div className="bg-card rounded-lg border border-border p-6">
-            <h2 className="text-xl font-heading font-semibold text-foreground flex items-center space-x-2 mb-6">
+          <div className="p-6 border rounded-lg bg-card border-border">
+            <h2 className="flex items-center mb-6 space-x-2 text-xl font-semibold font-heading text-foreground">
               <Icon name="ShoppingCart" size={20} />
               <span>Ingredients</span>
             </h2>
@@ -340,8 +331,8 @@ const AddRecipe = () => {
           </div>
 
           {/* Instructions */}
-          <div className="bg-card rounded-lg border border-border p-6">
-            <h2 className="text-xl font-heading font-semibold text-foreground flex items-center space-x-2 mb-6">
+          <div className="p-6 border rounded-lg bg-card border-border">
+            <h2 className="flex items-center mb-6 space-x-2 text-xl font-semibold font-heading text-foreground">
               <Icon name="List" size={20} />
               <span>Instructions</span>
             </h2>
@@ -353,9 +344,9 @@ const AddRecipe = () => {
           </div>
 
           {/* Form Actions */}
-          <div className="bg-card rounded-lg border border-border p-6">
+          <div className="p-6 border rounded-lg bg-card border-border">
             {errors.submit && (
-              <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+              <div className="p-3 mb-4 border rounded-md bg-destructive/10 border-destructive/20">
                 <p className="text-sm text-destructive">{errors.submit}</p>
               </div>
             )}

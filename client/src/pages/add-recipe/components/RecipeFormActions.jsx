@@ -8,6 +8,10 @@ const RecipeFormActions = ({ onSave, onCancel, isLoading, hasUnsavedChanges }) =
   const navigate = useNavigate();
 
   const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+      return;
+    }
     if (hasUnsavedChanges) {
       setShowCancelDialog(true);
     } else {

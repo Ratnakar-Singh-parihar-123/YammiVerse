@@ -24,10 +24,19 @@ const userSchema = new mongoose.Schema(
       required: [true, "Password is required"],
       minlength: [6, "Password must be at least 6 characters long"],
     },
+    // ─── Role field – default "user"; "admin" is set only by the bootstrap process ───
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
     avatar: {
       type: String,
       default: "/uploads/default-avatar.png", //  default profile picture
     },
+    bio: { type: String, default: "" },
+    location: { type: String, default: "" },
+    website: { type: String, default: "" },
     //  Favorites relation with Recipe model
     favorites: [
       {

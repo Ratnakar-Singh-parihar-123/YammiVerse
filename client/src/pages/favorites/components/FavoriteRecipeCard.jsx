@@ -1,7 +1,8 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import Icon from '../../../components/AppIcon';
-import Image from '../../../components/AppImage';
+import React from "react";
+import { Link } from "react-router-dom";
+import Icon from "../../../components/AppIcon";
+import Image from "../../../components/AppImage";
+import { getImageUrl } from "../../../utils/api";
 
 const FavoriteRecipeCard = ({ recipe, onToggleFavorite }) => {
   const handleFavoriteClick = (e) => {
@@ -10,30 +11,22 @@ const FavoriteRecipeCard = ({ recipe, onToggleFavorite }) => {
     onToggleFavorite(recipe?._id);
   };
 
-  //  Normalize Image URL
-  let imageUrl = recipe?.coverImage || recipe?.image;
-  if (imageUrl && !imageUrl.startsWith("http")) {
-    imageUrl = `https://yammiverse.onrender.com/${imageUrl.replace(/\\/g, "/")}`;
-  }
-  if (!imageUrl) {
-    imageUrl = "https://via.placeholder.com/400x300?text=No+Image";
-  }
+  const imageUrl = getImageUrl(recipe?.coverImage || recipe?.image);
 
   return (
-    <div className="bg-card rounded-lg shadow-warm hover:shadow-warm-md transition-state group">
-      {/*  FIXED: correct route param */}
-      <Link to={`/recipes/${recipe?._id}`} className="block">
-        <div className="relative overflow-hidden rounded-t-lg h-48">
+    <div className="bg-card border border-border rounded-xl shadow-warm hover:shadow-warm-md transition-all duration-300 group overflow-hidden flex flex-col">
+      <Link to={`/recipes/${recipe?._id}`} className="block flex-1 flex flex-col">
+        <div className="relative overflow-hidden h-48 sm:h-52 bg-muted/30">
           <Image
             src={imageUrl}
-            alt={recipe?.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-state"
+            alt={recipe?.title || "Recipe"}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
 
-          {/* ❤️ Favorite Button */}
+          {/* ❤️ Favorite Toggle Button */}
           <button
             onClick={handleFavoriteClick}
-            className="absolute top-3 right-3 w-10 h-10 bg-background/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-background transition-micro"
+            className="absolute top-3 right-3 w-10 h-10 bg-background/85 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-background transition-all shadow-md active:scale-95"
             aria-label="Remove from favorites"
           >
             <Icon
@@ -43,60 +36,49 @@ const FavoriteRecipeCard = ({ recipe, onToggleFavorite }) => {
             />
           </button>
 
-          {/* ⏱ Cooking Time */}
+          {/* Difficulty Badge */}
+          {recipe?.difficulty && (
+            <div className="absolute top-3 left-3 bg-background/85 backdrop-blur-md px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wider text-foreground">
+              {recipe.difficulty}
+            </div>
+          )}
+
+          {/* Cooking Time Badge */}
           {recipe?.cookingTime && (
-            <div className="absolute bottom-3 left-3 bg-background/90 backdrop-blur-sm px-2 py-1 rounded-md">
-              <div className="flex items-center space-x-1">
-                <Icon name="Clock" size={14} className="text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">
-                  {recipe?.cookingTime}
-                </span>
-              </div>
+            <div className="absolute bottom-3 left-3 bg-background/85 backdrop-blur-md px-2.5 py-1 rounded-md flex items-center space-x-1.5 shadow-sm">
+              <Icon name="Clock" size={14} className="text-muted-foreground" />
+              <span className="text-xs font-medium text-foreground">
+                {recipe.cookingTime}
+              </span>
             </div>
           )}
         </div>
 
         {/* Recipe Info */}
-        <div className="p-4">
-          <h3 className="font-heading font-semibold text-lg text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-micro">
-            {recipe?.title}
-          </h3>
+        <div className="p-5 flex-1 flex flex-col justify-between">
+          <div>
+            <h3 className="font-heading font-semibold text-lg text-foreground mb-2 line-clamp-1 group-hover:text-primary transition-colors">
+              {recipe?.title}
+            </h3>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-              {recipe?.servings && (
-                <div className="flex items-center space-x-1">
-                  <Icon name="Users" size={14} />
-                  <span>{recipe?.servings} servings</span>
-                </div>
-              )}
-              {recipe?.difficulty && (
-                <div className="flex items-center space-x-1">
-                  <Icon name="ChefHat" size={14} />
-                  <span className="capitalize">{recipe?.difficulty}</span>
-                </div>
-              )}
-            </div>
+            {recipe?.description && (
+              <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                {recipe.description}
+              </p>
+            )}
           </div>
 
-          {/* Tags */}
-          {recipe?.tags && recipe?.tags?.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-3">
-              {recipe?.tags?.slice(0, 3)?.map((tag) => (
-                <span
-                  key={tag}
-                  className="px-2 py-1 bg-muted text-xs font-medium text-muted-foreground rounded-md"
-                >
-                  {tag}
-                </span>
-              ))}
-              {recipe?.tags?.length > 3 && (
-                <span className="px-2 py-1 bg-muted text-xs font-medium text-muted-foreground rounded-md">
-                  +{recipe?.tags?.length - 3}
-                </span>
-              )}
+          <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t border-border/60">
+            <div className="flex items-center space-x-1">
+              <Icon name="Users" size={14} />
+              <span>{recipe?.servings || 1} servings</span>
             </div>
-          )}
+            {recipe?.category && (
+              <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                {recipe.category}
+              </span>
+            )}
+          </div>
         </div>
       </Link>
     </div>

@@ -15,18 +15,7 @@ const Modal = ({
 }) => {
   const navigate = useNavigate();
 
-  // ✅ ESC key listener
-  useEffect(() => {
-    const handleEsc = (e) => {
-      if (e.key === "Escape" && isOpen) {
-        handleClose();
-      }
-    };
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [isOpen]);
-
-  const handleClose = () => {
+  const handleClose = React.useCallback(() => {
     const token =
       localStorage.getItem("recipeHub-token") ||
       sessionStorage.getItem("recipeHub-token");
@@ -37,7 +26,18 @@ const Modal = ({
     } else {
       onClose?.();
     }
-  };
+  }, [requireLogin, navigate, onClose]);
+
+  // ✅ ESC key listener
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === "Escape" && isOpen) {
+        handleClose();
+      }
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [isOpen, handleClose]);
 
   return (
     <AnimatePresence>

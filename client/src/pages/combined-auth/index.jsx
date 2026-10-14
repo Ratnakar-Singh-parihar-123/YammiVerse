@@ -7,6 +7,8 @@ import { Checkbox } from "../../components/ui/Checkbox";
 import ThemeToggle from "../../components/ui/ThemeToggle";
 import { cn } from "../../utils/cn";
 import axios from "axios";
+import { setAuthSession } from "../../utils/auth";
+import { API_BASE_URL } from "../../utils/api";
 
 const CombinedAuth = () => {
   const navigate = useNavigate();
@@ -121,30 +123,29 @@ const CombinedAuth = () => {
       let res;
       if (isSignIn) {
         //  Login API
-        res = await axios.post("https://yammiverse.onrender.com/api/users/login", {
-          email: formData.email,
+        res = await axios.post(`${API_BASE_URL}/api/users/login`, {
+          email: formData.email.trim(),
           password: formData.password,
         });
       } else {
         //  Signup API
-        res = await axios.post("https://yammiverse.onrender.com/api/users/signup", {
-          fullName: formData.fullName,
-          email: formData.email,
+        res = await axios.post(`${API_BASE_URL}/api/users/signup`, {
+          fullName: formData.fullName.trim(),
+          email: formData.email.trim(),
           password: formData.password,
         });
       }
 
-      //  Save token & user
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      //  Save token & user using unified auth helper
+      setAuthSession(res.data.token, res.data.user, formData.rememberMe);
 
-      navigate("/home");
+      navigate("/home", { replace: true });
     } catch (error) {
       console.error("Auth error:", error);
       setErrors({
         submit:
-          error.response?.data?.error ||
           error.response?.data?.message ||
+          error.response?.data?.error ||
           "Authentication failed. Please try again.",
       });
     } finally {
@@ -152,35 +153,31 @@ const CombinedAuth = () => {
     }
   };
 
-  const handleSocialAuth = (provider) => {
-    console.log(`${isSignIn ? "Login" : "Register"} with ${provider}`);
-  };
-
   return (
-    <div className="min-h-screen bg-background transition-theme flex items-center justify-center p-4">
+    <div className="flex items-center justify-center min-h-screen p-4 bg-background transition-theme">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5 dark:opacity-10">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20" />
-        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-primary/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-accent/10 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="absolute w-32 h-32 rounded-full top-1/4 left-1/4 bg-primary/10 blur-3xl animate-pulse" />
+        <div className="absolute w-48 h-48 delay-1000 rounded-full bottom-1/4 right-1/4 bg-accent/10 blur-3xl animate-pulse" />
       </div>
 
       {/* Auth Card */}
       <div className="relative w-full max-w-md">
-        <div className="bg-card border border-border rounded-2xl shadow-warm-lg overflow-hidden transition-theme">
+        <div className="overflow-hidden border bg-card border-border rounded-2xl shadow-warm-lg transition-theme">
           {/* Header with Mode Toggle */}
           <div className="relative p-8 pb-4">
             <div className="absolute top-4 right-4">
               <ThemeToggle />
             </div>
 
-            <div className="text-center mb-6">
+            <div className="mb-6 text-center">
               <div className="flex items-center justify-center mb-4">
-                <div className="bg-primary rounded-full p-3">
-                  <ChefHat className="h-6 w-6 text-primary-foreground" />
+                <div className="p-3 rounded-full bg-primary">
+                  <ChefHat className="w-6 h-6 text-primary-foreground" />
                 </div>
               </div>
-              <h1 className="text-2xl font-bold text-foreground mb-2">
+              <h1 className="mb-2 text-2xl font-bold text-foreground">
                 {isSignIn ? "Welcome Back" : "Join RecipeHub"}
               </h1>
               <p className="text-muted-foreground">
@@ -191,14 +188,14 @@ const CombinedAuth = () => {
             </div>
 
             {/* Mode Toggle */}
-            <div className="flex bg-muted rounded-lg p-1 mb-6">
+            <div className="flex p-1 mb-6 rounded-lg bg-muted">
               <button
                 onClick={() => handleModeSwitch("signin")}
                 className={cn(
                   "flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200",
                   isSignIn
                     ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 Sign In
@@ -209,7 +206,7 @@ const CombinedAuth = () => {
                   "flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200",
                   !isSignIn
                     ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 Sign Up
@@ -222,7 +219,7 @@ const CombinedAuth = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Full Name */}
               {!isSignIn && (
-                <div className="space-y-2 relative">
+                <div className="relative space-y-2">
                   <Input
                     type="text"
                     placeholder="Enter your full name"
@@ -234,12 +231,12 @@ const CombinedAuth = () => {
                     className="pl-10"
                     required
                   />
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <User className="absolute w-4 h-4 -translate-y-1/2 left-3 top-1/2 text-muted-foreground" />
                 </div>
               )}
 
               {/* Email */}
-              <div className="space-y-2 relative">
+              <div className="relative space-y-2">
                 <Input
                   type="email"
                   placeholder="Enter your email"
@@ -249,25 +246,29 @@ const CombinedAuth = () => {
                   className="pl-10"
                   required
                 />
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Mail className="absolute w-4 h-4 -translate-y-1/2 left-3 top-1/2 text-muted-foreground" />
               </div>
 
               {/* Password */}
-              <div className="space-y-2 relative">
+              <div className="relative space-y-2">
                 <Input
                   type={showPassword ? "text" : "password"}
-                  placeholder={isSignIn ? "Enter your password" : "Create a password"}
+                  placeholder={
+                    isSignIn ? "Enter your password" : "Create a password"
+                  }
                   value={formData.password}
-                  onChange={(e) => handleInputChange("password", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("password", e.target.value)
+                  }
                   error={errors?.password}
                   className="pl-10 pr-10"
                   required
                 />
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Lock className="absolute w-4 h-4 -translate-y-1/2 left-3 top-1/2 text-muted-foreground" />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                  className="absolute -translate-y-1/2 right-3 top-1/2"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -275,12 +276,16 @@ const CombinedAuth = () => {
                 {!isSignIn && formData.password && (
                   <div className="mt-2">
                     <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Password strength:</span>
-                      <span className={cn("font-medium", passwordStrength.color)}>
+                      <span className="text-muted-foreground">
+                        Password strength:
+                      </span>
+                      <span
+                        className={cn("font-medium", passwordStrength.color)}
+                      >
                         {passwordStrength.text}
                       </span>
                     </div>
-                    <div className="flex space-x-1 mt-1">
+                    <div className="flex mt-1 space-x-1">
                       {[1, 2, 3, 4, 5].map((bar) => (
                         <div
                           key={bar}
@@ -290,9 +295,9 @@ const CombinedAuth = () => {
                               ? passwordStrength.score <= 2
                                 ? "bg-destructive"
                                 : passwordStrength.score <= 3
-                                ? "bg-warning"
-                                : "bg-success"
-                              : "bg-muted"
+                                  ? "bg-warning"
+                                  : "bg-success"
+                              : "bg-muted",
                           )}
                         />
                       ))}
@@ -303,7 +308,7 @@ const CombinedAuth = () => {
 
               {/* Confirm Password */}
               {!isSignIn && (
-                <div className="space-y-2 relative">
+                <div className="relative space-y-2">
                   <Input
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm your password"
@@ -315,23 +320,29 @@ const CombinedAuth = () => {
                     className="pl-10 pr-10"
                     required
                   />
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Lock className="absolute w-4 h-4 -translate-y-1/2 left-3 top-1/2 text-muted-foreground" />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                    className="absolute -translate-y-1/2 right-3 top-1/2"
                   >
-                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showConfirmPassword ? (
+                      <EyeOff size={16} />
+                    ) : (
+                      <Eye size={16} />
+                    )}
                   </button>
 
                   {formData.confirmPassword && (
                     <div className="mt-1 text-xs">
                       {formData.password === formData.confirmPassword ? (
-                        <span className="text-success flex items-center gap-1">
+                        <span className="flex items-center gap-1 text-success">
                           <Check size={12} /> Passwords match
                         </span>
                       ) : (
-                        <span className="text-destructive">Passwords don't match</span>
+                        <span className="text-destructive">
+                          Passwords don't match
+                        </span>
                       )}
                     </div>
                   )}
@@ -344,7 +355,9 @@ const CombinedAuth = () => {
                   <div className="flex items-center justify-between">
                     <Checkbox
                       checked={formData.rememberMe}
-                      onChange={(checked) => handleInputChange("rememberMe", checked)}
+                      onChange={(checked) =>
+                        handleInputChange("rememberMe", checked)
+                      }
                       label="Remember me"
                     />
                     <Link
@@ -358,16 +371,21 @@ const CombinedAuth = () => {
                   <div className="space-y-4">
                     <Checkbox
                       checked={formData.agreeToTerms}
-                      onChange={(checked) => handleInputChange("agreeToTerms", checked)}
+                      onChange={(checked) =>
+                        handleInputChange("agreeToTerms", checked)
+                      }
                       error={errors?.agreeToTerms}
                       label={
                         <span className="text-sm">
                           I agree to the{" "}
-                          <Link to="/terms" className="text-primary underline">
+                          <Link to="/terms" className="underline text-primary">
                             Terms of Service
                           </Link>{" "}
                           and{" "}
-                          <Link to="/privacy" className="text-primary underline">
+                          <Link
+                            to="/privacy"
+                            className="underline text-primary"
+                          >
                             Privacy Policy
                           </Link>
                         </span>
@@ -387,20 +405,25 @@ const CombinedAuth = () => {
 
               {/* Submit Error */}
               {errors?.submit && (
-                <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
+                <div className="p-3 text-sm rounded-lg text-destructive bg-destructive/10">
                   {errors.submit}
                 </div>
               )}
 
               {/* Submit Button */}
-              <Button type="submit" fullWidth loading={loading} className="h-12">
+              <Button
+                type="submit"
+                fullWidth
+                loading={loading}
+                className="h-12"
+              >
                 {loading
                   ? isSignIn
                     ? "Signing in..."
                     : "Creating Account..."
                   : isSignIn
-                  ? "Sign In"
-                  : "Create Account"}
+                    ? "Sign In"
+                    : "Create Account"}
               </Button>
             </form>
           </div>
@@ -408,7 +431,7 @@ const CombinedAuth = () => {
 
         {/* Demo Info */}
         <div className="mt-4 text-center">
-          <p className="text-xs text-muted-foreground bg-muted/30 border border-border rounded-lg p-3">
+          <p className="p-3 text-xs border rounded-lg text-muted-foreground bg-muted/30 border-border">
             <strong>Demo Mode:</strong> Use any valid email format with any
             password (6+ characters)
           </p>

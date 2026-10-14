@@ -2,13 +2,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import Icon from "./AppIcon";   // ✅ fixed path
+import Icon from "./AppIcon"; // ✅ fixed path
 import Button from "./ui/Button";
 import Input from "./ui/Input";
 
 const OTP_LENGTH = 6;
 const RESEND_COOLDOWN = 60; // seconds
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"; // ✅ backend URL
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"; // ✅ backend URL
 
 export default function ForgotPasswordFlow() {
   const navigate = useNavigate();
@@ -67,7 +67,9 @@ export default function ForgotPasswordFlow() {
       startResendCooldown();
     } catch (err) {
       console.error(err);
-      setError(err?.response?.data?.message || "Failed to send OTP. Try again later.");
+      setError(
+        err?.response?.data?.message || "Failed to send OTP. Try again later.",
+      );
     } finally {
       setLoading(false);
     }
@@ -84,7 +86,10 @@ export default function ForgotPasswordFlow() {
     }
     try {
       setLoading(true);
-      const res = await axios.post(`${API_BASE}/api/auth/verify-otp`, { email, otp });
+      const res = await axios.post(`${API_BASE}/api/auth/verify-otp`, {
+        email,
+        otp,
+      });
       const token = res.data?.resetToken ?? null;
       if (!token) {
         setError("Server did not provide reset token. Contact support.");
@@ -94,7 +99,10 @@ export default function ForgotPasswordFlow() {
       setStage("reset");
     } catch (err) {
       console.error(err);
-      setError(err?.response?.data?.message || "OTP verification failed. Please try again.");
+      setError(
+        err?.response?.data?.message ||
+          "OTP verification failed. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -123,8 +131,8 @@ export default function ForgotPasswordFlow() {
     e?.preventDefault();
     setError("");
     setInfo("");
-    if (!newPassword || newPassword.length < 6) {
-      setError("Password should be at least 6 characters.");
+    if (!newPassword || newPassword.length < 8) {
+      setError("Password should be at least 8 characters.");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -140,7 +148,9 @@ export default function ForgotPasswordFlow() {
       });
       setInfo("✅ Password updated. Redirecting to login...");
       setTimeout(() => {
-        navigate(`/combined-auth?email=${encodeURIComponent(email)}`, { replace: true });
+        navigate(`/login?email=${encodeURIComponent(email)}`, {
+          replace: true,
+        });
       }, 1500);
     } catch (err) {
       console.error(err);
@@ -157,21 +167,31 @@ export default function ForgotPasswordFlow() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-background">
-      <div className="w-full max-w-md bg-card rounded-2xl p-6 shadow-lg border border-border">
+    <div className="flex items-center justify-center min-h-screen p-6 bg-background">
+      <div className="w-full max-w-md p-6 border shadow-lg bg-card rounded-2xl border-border">
         <div className="flex items-center gap-3 mb-4">
           <Icon name="Lock" size={20} />
           <h1 className="text-lg font-semibold">Forgot password</h1>
         </div>
 
         {/* Error & Info Messages */}
-        {error && <div className="mb-3 text-sm text-destructive bg-destructive/10 p-3 rounded">{error}</div>}
-        {info && <div className="mb-3 text-sm text-foreground bg-success/10 p-3 rounded">{info}</div>}
+        {error && (
+          <div className="p-3 mb-3 text-sm rounded text-destructive bg-destructive/10">
+            {error}
+          </div>
+        )}
+        {info && (
+          <div className="p-3 mb-3 text-sm rounded text-foreground bg-success/10">
+            {info}
+          </div>
+        )}
 
         {/* Stage: Request OTP */}
         {stage === "request" && (
           <form onSubmit={handleRequestOtp} className="space-y-4">
-            <label htmlFor="email" className="text-sm text-muted-foreground">Enter your email</label>
+            <label htmlFor="email" className="text-sm text-muted-foreground">
+              Enter your email
+            </label>
             <Input
               id="email"
               type="email"
@@ -181,7 +201,9 @@ export default function ForgotPasswordFlow() {
               required
             />
             <div className="flex justify-end">
-              <Button type="submit" disabled={loading}>{loading ? "Sending..." : "Send OTP"}</Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Sending..." : "Send OTP"}
+              </Button>
             </div>
           </form>
         )}
@@ -193,12 +215,14 @@ export default function ForgotPasswordFlow() {
               We sent a {OTP_LENGTH}-digit code to <strong>{email}</strong>.
             </p>
             <div>
-              <label htmlFor="otp" className="text-sm text-muted-foreground">Enter OTP</label>
+              <label htmlFor="otp" className="text-sm text-muted-foreground">
+                Enter OTP
+              </label>
               <input
                 id="otp"
                 inputMode="numeric"
                 pattern="\d*"
-                className="w-full text-center text-lg font-medium tracking-widest p-3 rounded-md border border-border bg-background mt-2"
+                className="w-full p-3 mt-2 text-lg font-medium tracking-widest text-center border rounded-md border-border bg-background"
                 value={otp}
                 onChange={(e) => onOtpChange(e.target.value)}
                 maxLength={OTP_LENGTH}
@@ -208,13 +232,29 @@ export default function ForgotPasswordFlow() {
             </div>
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                {resendTimer > 0 ? <span>Resend in {resendTimer}s</span> : (
-                  <button type="button" onClick={handleResend} className="text-sm text-primary hover:underline">Resend OTP</button>
+                {resendTimer > 0 ? (
+                  <span>Resend in {resendTimer}s</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Resend OTP
+                  </button>
                 )}
               </div>
               <div className="flex gap-2">
-                <Button type="button" variant="ghost" onClick={() => setStage("request")}>Change email</Button>
-                <Button type="submit" disabled={loading}>{loading ? "Verifying..." : "Verify OTP"}</Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setStage("request")}
+                >
+                  Change email
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? "Verifying..." : "Verify OTP"}
+                </Button>
               </div>
             </div>
           </form>
@@ -223,12 +263,34 @@ export default function ForgotPasswordFlow() {
         {/* Stage: Reset Password */}
         {stage === "reset" && (
           <form onSubmit={handleResetPassword} className="space-y-4">
-            <p className="text-sm text-muted-foreground">Enter a new password for <strong>{email}</strong></p>
-            <Input type="password" placeholder="New password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
-            <Input type="password" placeholder="Confirm password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+            <p className="text-sm text-muted-foreground">
+              Enter a new password for <strong>{email}</strong>
+            </p>
+            <Input
+              type="password"
+              placeholder="New password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+            />
+            <Input
+              type="password"
+              placeholder="Confirm password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="ghost" onClick={() => setStage("otp")}>Back</Button>
-              <Button type="submit" disabled={loading}>{loading ? "Saving..." : "Save password"}</Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setStage("otp")}
+              >
+                Back
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Saving..." : "Save password"}
+              </Button>
             </div>
           </form>
         )}

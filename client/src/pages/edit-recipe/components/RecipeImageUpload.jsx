@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import Image from '../../../components/AppImage';
-import Icon from '../../../components/AppIcon';
-import Button from '../../../components/ui/Button';
+import React, { useState, useEffect } from "react";
+import Image from "../../../components/AppImage";
+import Icon from "../../../components/AppIcon";
+import Button from "../../../components/ui/Button";
+
+import { getImageUrl } from "../../../utils/api";
 
 const RecipeImageUpload = ({ currentImage, onImageChange, error }) => {
   const [previewImage, setPreviewImage] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  //  If currentImage is string (from DB), show directly
+  // If currentImage is string (from DB), show directly
   useEffect(() => {
-    if (typeof currentImage === "string") {
-      setPreviewImage(currentImage.startsWith("http") 
-        ? currentImage 
-        : `https://yammiverse.onrender.com/${currentImage.replace(/\\/g, "/")}`);
+    if (typeof currentImage === "string" && currentImage) {
+      setPreviewImage(getImageUrl(currentImage));
     }
   }, [currentImage]);
 
@@ -89,7 +89,11 @@ const RecipeImageUpload = ({ currentImage, onImageChange, error }) => {
           onClick={() => document.getElementById("image-upload")?.click()}
         >
           <div className="flex flex-col items-center space-y-2">
-            <Icon name="ImagePlus" size={48} className="text-muted-foreground" />
+            <Icon
+              name="ImagePlus"
+              size={48}
+              className="text-muted-foreground"
+            />
             <div className="text-center">
               <p className="text-sm font-medium text-foreground">
                 Click to upload or drag and drop

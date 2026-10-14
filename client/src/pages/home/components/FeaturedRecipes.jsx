@@ -3,137 +3,130 @@ import { Link } from 'react-router-dom';
 import Image from '../../../components/AppImage';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { getImageUrl } from '../../../utils/api';
 
-const FeaturedRecipes = ({ featuredRecipes, onToggleFavorite, favorites }) => {
-  if (!featuredRecipes || featuredRecipes?.length === 0) {
+const FeaturedRecipes = ({ featuredRecipes = [], onToggleFavorite, favorites = [] }) => {
+  if (!featuredRecipes || featuredRecipes.length === 0) {
     return null;
   }
 
   const handleFavoriteClick = (e, recipeId) => {
     e?.preventDefault();
     e?.stopPropagation();
-    onToggleFavorite(recipeId);
+    if (onToggleFavorite) onToggleFavorite(recipeId);
   };
 
   return (
-    <div className="mb-8">
+    <div className="mb-12">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-heading font-bold text-foreground mb-2">
+          <h2 className="text-2xl font-heading font-bold text-foreground">
             Featured Recipes
           </h2>
-          <p className="text-muted-foreground">
-            Handpicked recipes from our community
+          <p className="text-sm text-muted-foreground">
+            Handpicked culinary creations from our top chefs
           </p>
         </div>
         <Button
           variant="outline"
+          size="sm"
           iconName="ArrowRight"
           iconPosition="right"
           asChild
         >
-          <Link to="/favorites">View All</Link>
+          <Link to="/home#recipes">View All</Link>
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {featuredRecipes?.slice(0, 2)?.map((recipe) => {
-          const recipeId = recipe?._id || recipe?.id; //  Mongo _id fallback
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {featuredRecipes.slice(0, 2).map((recipe) => {
+          const recipeId = recipe?._id || recipe?.id;
+          const imageUrl = getImageUrl(recipe?.coverImage || recipe?.image);
+          const isFav =
+            Array.isArray(favorites) &&
+            favorites.some((fav) =>
+              typeof fav === "string" ? fav === recipeId : fav?._id === recipeId
+            );
+
           return (
             <Link
               key={recipeId}
-              to={`/recipe-details?id=${recipeId}`}
+              to={`/recipes/${recipeId}`}
               className="group block"
             >
-              <div className="bg-card rounded-lg border border-border overflow-hidden shadow-warm hover:shadow-warm-md transition-state">
-                <div className="flex flex-col sm:flex-row">
-                  {/* Recipe Image */}
-                  <div className="relative sm:w-48 aspect-[4/3] sm:aspect-square overflow-hidden">
-                    <Image
-                      src={recipe?.image}
-                      alt={recipe?.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-state"
-                    />
+              <div className="bg-card rounded-xl border border-border overflow-hidden shadow-warm hover:shadow-warm-md transition-all duration-300 h-full flex flex-col sm:flex-row">
+                {/* Recipe Image */}
+                <div className="relative sm:w-48 aspect-[4/3] sm:aspect-square overflow-hidden shrink-0 bg-muted/40">
+                  <Image
+                    src={imageUrl}
+                    alt={recipe?.title || "Featured Recipe"}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
 
-                    {/* Favorite Button */}
-                    <button
-                      onClick={(e) => handleFavoriteClick(e, recipeId)}
-                      className="absolute top-3 right-3 w-8 h-8 bg-background/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-background transition-micro"
-                      aria-label={
-                        favorites?.includes(recipeId)
-                          ? 'Remove from favorites'
-                          : 'Add to favorites'
+                  {/* Favorite Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => handleFavoriteClick(e, recipeId)}
+                    className="absolute top-3 right-3 w-8 h-8 bg-background/85 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-background transition-transform active:scale-95 shadow-sm"
+                    aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
+                  >
+                    <Icon
+                      name="Heart"
+                      size={16}
+                      className={
+                        isFav
+                          ? "text-destructive fill-current"
+                          : "text-muted-foreground"
                       }
-                    >
-                      <Icon
-                        name="Heart"
-                        size={16}
-                        color={
-                          favorites?.includes(recipeId)
-                            ? 'var(--color-destructive)'
-                            : 'var(--color-muted-foreground)'
-                        }
-                        className={
-                          favorites?.includes(recipeId) ? 'fill-current' : ''
-                        }
-                      />
-                    </button>
+                    />
+                  </button>
 
-                    {/* Featured Badge */}
-                    <div className="absolute top-3 left-3">
-                      <span className="px-2 py-1 text-xs font-medium bg-accent text-accent-foreground rounded-md">
-                        Featured
-                      </span>
-                    </div>
+                  {/* Featured Badge */}
+                  <div className="absolute top-3 left-3">
+                    <span className="px-2 py-0.5 text-xs font-semibold bg-accent text-accent-foreground rounded-md uppercase tracking-wider">
+                      Featured
+                    </span>
                   </div>
+                </div>
 
-                  {/* Recipe Content */}
-                  <div className="flex-1 p-6">
-                    <h3 className="font-heading font-semibold text-xl text-foreground mb-2 group-hover:text-primary transition-micro">
+                {/* Recipe Content */}
+                <div className="flex-1 p-5 flex flex-col justify-between">
+                  <div>
+                    {recipe?.category && (
+                      <span className="text-[11px] font-semibold text-primary uppercase tracking-wider block mb-1">
+                        {recipe.category}
+                      </span>
+                    )}
+
+                    <h3 className="font-heading font-bold text-lg text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-1">
                       {recipe?.title}
                     </h3>
 
-                    <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
-                      {recipe?.description}
-                    </p>
+                    {recipe?.description && (
+                      <p className="text-muted-foreground text-xs sm:text-sm mb-4 line-clamp-2 leading-relaxed">
+                        {recipe.description}
+                      </p>
+                    )}
+                  </div>
 
-                    {/* Recipe Meta */}
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+                  {/* Recipe Meta */}
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground pt-3 border-t border-border/60">
+                    {recipe?.cookingTime && (
                       <div className="flex items-center gap-1">
                         <Icon name="Clock" size={14} />
-                        <span>{recipe?.cookingTime} min</span>
+                        <span>{recipe.cookingTime}</span>
                       </div>
+                    )}
+                    {recipe?.servings && (
                       <div className="flex items-center gap-1">
                         <Icon name="Users" size={14} />
-                        <span>{recipe?.servings} servings</span>
+                        <span>{recipe.servings} servings</span>
                       </div>
-                      {recipe?.difficulty && (
-                        <div className="flex items-center gap-1">
-                          <Icon name="BarChart3" size={14} />
-                          <span>{recipe?.difficulty}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Rating */}
-                    {recipe?.rating && (
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1">
-                          <Icon
-                            name="Star"
-                            size={14}
-                            color="var(--color-warning)"
-                            className="fill-current"
-                          />
-                          <span className="text-sm font-medium">
-                            {recipe?.rating}
-                          </span>
-                        </div>
-                        {recipe?.reviews && (
-                          <span className="text-xs text-muted-foreground">
-                            ({recipe?.reviews} reviews)
-                          </span>
-                        )}
+                    )}
+                    {recipe?.difficulty && (
+                      <div className="flex items-center gap-1">
+                        <Icon name="ChefHat" size={14} />
+                        <span className="capitalize">{recipe.difficulty}</span>
                       </div>
                     )}
                   </div>

@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Input from "../../../components/ui/Input";
 import Button from "../../../components/ui/Button";
 import RecipeImageUpload from "./RecipeImageUpload";
 import IngredientsEditor from "./IngredientsEditor";
 import InstructionsEditor from "./InstructionsEditor";
-import axios from "axios";
+import api from "../../../utils/api";
 
 const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
   const navigate = useNavigate();
+  const isInitialMount = useRef(true);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -45,14 +46,19 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
 
   // 🔹 Track unsaved changes
   useEffect(() => {
-    if (recipeData) {
-      setHasUnsavedChanges(true);
+    if (isInitialMount.current) {
+      if (recipeData) {
+        isInitialMount.current = false;
+      }
+      return;
     }
-  }, [formData, ingredients, instructions]);
+    setHasUnsavedChanges(true);
+  }, [formData, ingredients, instructions, recipeData]);
 
   // 🔹 Handle Input Change
   const handleInputChange = (e) => {
-    const { name, value } = e?.target;
+    if (!e?.target) return;
+    const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors?.[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -116,23 +122,18 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
         data.append("coverImage", formData.image);
       }
 
-      const token =
-        localStorage.getItem("recipeHub-token") ||
-        sessionStorage.getItem("recipeHub-token");
-
-      const res = await axios.put(
-        `https://yammiverse.onrender.com/api/recipes/${recipeId}`,
+      const res = await api.put(
+        `/api/recipes/${recipeId}`,
         data,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
-        }
+        },
       );
 
       const updatedRecipe = res.data.recipe;
-      await onSave(updatedRecipe);
+      await onSave?.(updatedRecipe);
       setHasUnsavedChanges(false);
       navigate(`/recipes/${updatedRecipe._id || updatedRecipe.id}`);
     } catch (error) {
@@ -152,7 +153,7 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
   const handleCancel = () => {
     if (hasUnsavedChanges) {
       const confirmLeave = window.confirm(
-        "You have unsaved changes. Are you sure you want to leave?"
+        "You have unsaved changes. Are you sure you want to leave?",
       );
       if (!confirmLeave) return;
     }
@@ -169,10 +170,10 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* Basic Information */}
       <div className="space-y-6">
-        <h2 className="text-xl font-heading font-semibold text-foreground">
+        <h2 className="text-xl font-semibold font-heading text-foreground">
           Basic Information
         </h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Input
             label="Recipe Title"
             name="title"
@@ -190,7 +191,7 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
             required
           />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Input
             label="Cooking Time"
             name="cookingTime"
@@ -209,12 +210,12 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
             required
           />
           <div>
-            <label className="block text-sm font-medium mb-2">Difficulty</label>
+            <label className="block mb-2 text-sm font-medium">Difficulty</label>
             <select
               name="difficulty"
               value={formData.difficulty}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-border rounded-md bg-background"
+              className="w-full px-3 py-2 border rounded-md border-border bg-background"
             >
               {difficultyOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -230,13 +231,15 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
           onChange={handleInputChange}
           placeholder="Brief description..."
           rows={3}
-          className="w-full px-3 py-2 border border-border rounded-md bg-background"
+          className="w-full px-3 py-2 border rounded-md border-border bg-background"
         />
       </div>
 
       {/* Image Upload */}
       <div>
-        <h2 className="text-xl font-heading font-semibold mb-4">Recipe Image</h2>
+        <h2 className="mb-4 text-xl font-semibold font-heading">
+          Recipe Image
+        </h2>
         <RecipeImageUpload
           currentImage={formData.image}
           onImageChange={handleImageChange}
@@ -246,7 +249,7 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
 
       {/* Ingredients */}
       <div>
-        <h2 className="text-xl font-heading font-semibold mb-4">Ingredients</h2>
+        <h2 className="mb-4 text-xl font-semibold font-heading">Ingredients</h2>
         <IngredientsEditor
           ingredients={ingredients}
           onIngredientsChange={setIngredients}
@@ -256,7 +259,9 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
 
       {/* Instructions */}
       <div>
-        <h2 className="text-xl font-heading font-semibold mb-4">Instructions</h2>
+        <h2 className="mb-4 text-xl font-semibold font-heading">
+          Instructions
+        </h2>
         <InstructionsEditor
           instructions={instructions}
           onInstructionsChange={setInstructions}
@@ -265,7 +270,7 @@ const EditRecipeForm = ({ recipeData, onSave, onCancel }) => {
       </div>
 
       {/* Actions */}
-      <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t">
+      <div className="flex flex-col gap-4 pt-6 border-t sm:flex-row">
         {errors.submit && (
           <p className="text-sm text-destructive">{errors.submit}</p>
         )}

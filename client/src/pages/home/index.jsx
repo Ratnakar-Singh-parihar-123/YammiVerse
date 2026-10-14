@@ -6,19 +6,22 @@ import React, {
   useLayoutEffect,
 } from "react";
 import { Link, useLocation } from "react-router-dom";
-import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import TopNavigation from "../../components/ui/TopNavigation";
 import SearchFilters from "./components/SearchFilters";
 import RecipeGrid from "./components/RecipeGrid";
 import QuickStats from "./components/QuickStats";
 import FeaturedRecipes from "./components/FeaturedRecipes";
+import api from "../../utils/api";
+import { getAuthToken, getAuthUser } from "../../utils/auth";
 
 /* ---------------- Small UI Helpers ---------------- */
 const BannerDot = ({ active, onClick }) => (
   <button
-    className={`h-3 w-3 rounded-full transition-all ${
-      active ? "bg-primary scale-125 shadow-lg" : "bg-white/50 hover:bg-white"
+    type="button"
+    aria-label="Go to slide"
+    className={`h-2.5 rounded-full transition-all duration-300 ${
+      active ? "bg-primary w-8 shadow-md" : "bg-white/60 w-2.5 hover:bg-white"
     }`}
     onClick={onClick}
   />
@@ -28,16 +31,17 @@ const ErrorBanner = ({ message, onRetry }) => (
   <motion.div
     initial={{ opacity: 0, y: -8 }}
     animate={{ opacity: 1, y: 0 }}
-    className="mb-6 rounded-lg border border-destructive/30 bg-destructive/10 p-4"
+    className="p-4 mb-6 border rounded-xl border-destructive/30 bg-destructive/10"
   >
     <div className="flex items-start justify-between gap-4">
       <div className="text-destructive">
-        <p className="font-medium">Something went wrong</p>
-        <p className="text-sm opacity-80">{message}</p>
+        <p className="font-semibold text-sm">Something went wrong</p>
+        <p className="text-xs sm:text-sm opacity-90">{message}</p>
       </div>
       {onRetry && (
         <button
-          className="rounded-md bg-destructive px-3 py-2 text-sm font-medium text-white hover:bg-destructive/90"
+          type="button"
+          className="px-3 py-1.5 text-xs font-semibold text-white rounded-lg bg-destructive hover:bg-destructive/90 transition shadow-sm"
           onClick={onRetry}
         >
           Retry
@@ -49,23 +53,21 @@ const ErrorBanner = ({ message, onRetry }) => (
 
 const SectionTitle = ({ title, subtitle }) => (
   <motion.div
-    initial={{ opacity: 0, y: 20 }}
+    initial={{ opacity: 0, y: 16 }}
     whileInView={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.6 }}
+    transition={{ duration: 0.5 }}
     viewport={{ once: true }}
     className="mb-8 text-center"
   >
-    <h2 className="text-2xl font-bold text-foreground sm:text-3xl">{title}</h2>
+    <h2 className="text-2xl sm:text-3xl font-heading font-bold text-foreground">
+      {title}
+    </h2>
     {subtitle && (
-      <p className="mt-1 text-sm text-muted-foreground sm:text-base">
+      <p className="mt-1.5 text-sm sm:text-base text-muted-foreground max-w-xl mx-auto">
         {subtitle}
       </p>
     )}
   </motion.div>
-);
-
-const SkeletonBlock = ({ className = "" }) => (
-  <div className={`animate-pulse rounded-lg bg-muted/60 ${className}`} />
 );
 
 /* ---------------- Main HomePage ---------------- */
@@ -78,17 +80,14 @@ const HomePage = () => {
     cookingTime: "",
     difficulty: "",
   });
-  const [favorites, setFavorites] = useState(() =>
-    JSON.parse(localStorage.getItem("rh-favorites") || "[]")
-  );
+  const [favorites, setFavorites] = useState([]);
   const [allRecipes, setAllRecipes] = useState([]);
-  const [featured, setFeatured] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(getAuthUser());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const prefersReducedMotion = usePrefersReducedMotion();
 
-  //  Pick search from query param
+  // Read search query parameter from URL if present
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const q = params.get("search") || "";
@@ -99,9 +98,8 @@ const HomePage = () => {
   const images = useMemo(
     () => [
       "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1600&q=80",
-      "https://images.unsplash.com/photo-1506368249639-73a05d6f6488?auto=format&fit=crop&w=1600&q=80",
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQMG219LaxqNmWoCqpmDTdgi4i4dUHWrJ2K6g&s",
-      "https://t3.ftcdn.net/jpg/01/79/59/92/360_F_179599293_7mePKnajSM4bggDa8NkKpcAHKl3pow2l.jpg",
+      "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1600&q=80",
+      "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1600&q=80",
     ],
     []
   );
@@ -111,26 +109,26 @@ const HomePage = () => {
     setLoading(true);
     setError(null);
     try {
-      const recipesRes = await axios.get("https://yammiverse.onrender.com/api/recipes");
-      setAllRecipes(recipesRes.data?.recipes || []);
-      setFeatured(recipesRes.data?.recipes.filter((r) => r.featured) || []);
+      const recipesRes = await api.get("/api/recipes");
+      const recipeList = recipesRes.data?.recipes || [];
+      setAllRecipes(recipeList);
 
-      const token = localStorage.getItem("recipeHub-token");
+      const token = getAuthToken();
       if (token) {
         try {
-          const userRes = await axios.get(
-            "https://yammiverse.onrender.com/api/users/me",
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
+          const [userRes, favRes] = await Promise.all([
+            api.get("/api/users/me"),
+            api.get("/api/favorites"),
+          ]);
           setCurrentUser(userRes.data?.user || null);
+          setFavorites(favRes.data?.favorites || []);
         } catch {
-          setCurrentUser(null);
+          // If auth expired or failed, leave favorites empty
         }
       }
-    } catch {
-      setError("Failed to load recipes.");
+    } catch (err) {
+      console.error("Fetch data error:", err);
+      setError("Unable to load recipes. Please ensure the server is running.");
     } finally {
       setLoading(false);
     }
@@ -140,42 +138,63 @@ const HomePage = () => {
     fetchData();
   }, [fetchData]);
 
+  // Listen for login/logout to refresh favorites and user
+  useEffect(() => {
+    const handleAuthChange = () => {
+      setCurrentUser(getAuthUser());
+      fetchData();
+    };
+    window.addEventListener("auth-change", handleAuthChange);
+    return () => window.removeEventListener("auth-change", handleAuthChange);
+  }, [fetchData]);
+
   /* -------- Auto Banner Change -------- */
   useEffect(() => {
     if (prefersReducedMotion) return;
     const timer = setInterval(() => {
       setCurrent((prev) => (prev + 1) % images.length);
-    }, 4000);
+    }, 5000);
     return () => clearInterval(timer);
   }, [images.length, prefersReducedMotion]);
 
   /* -------- Filtering -------- */
   const filteredRecipes = useMemo(() => {
-    const s = searchTerm.toLowerCase();
+    const s = searchTerm.toLowerCase().trim();
     return allRecipes.filter((r) => {
       const matchesSearch =
         !s ||
         r.title?.toLowerCase().includes(s) ||
-        r.description?.toLowerCase().includes(s);
+        r.description?.toLowerCase().includes(s) ||
+        r.category?.toLowerCase().includes(s);
 
-      //  Category filter
+      // Category filter
       const matchesCategory =
-        !filters.category || r.category?.toLowerCase() === filters.category.toLowerCase();
+        !filters.category ||
+        r.category?.toLowerCase() === filters.category.toLowerCase();
 
-      //  Cooking time filter (numeric)
+      // Cooking time filter
       const matchesTime =
         !filters.cookingTime ||
         (r.cookingTime &&
-          parseInt(r.cookingTime) <= parseInt(filters.cookingTime));
+          parseInt(r.cookingTime, 10) <= parseInt(filters.cookingTime, 10));
 
-      //  Difficulty filter (case-insensitive)
+      // Difficulty filter
       const matchesDifficulty =
         !filters.difficulty ||
         r.difficulty?.toLowerCase() === filters.difficulty.toLowerCase();
 
-      return matchesSearch && matchesCategory && matchesTime && matchesDifficulty;
+      return (
+        matchesSearch && matchesCategory && matchesTime && matchesDifficulty
+      );
     });
   }, [searchTerm, filters, allRecipes]);
+
+  // Featured recipes (either marked featured or latest dishes)
+  const featured = useMemo(() => {
+    const marked = allRecipes.filter((r) => r.featured);
+    if (marked.length > 0) return marked;
+    return allRecipes.slice(0, 2);
+  }, [allRecipes]);
 
   /* -------- Stats -------- */
   const stats = useMemo(
@@ -187,97 +206,116 @@ const HomePage = () => {
     [favorites, allRecipes]
   );
 
-  /* -------- Favorites -------- */
-  const handleToggleFavorite = (id) => {
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((fid) => fid !== id) : [...prev, id]
-    );
-    localStorage.setItem(
-      "rh-favorites",
-      JSON.stringify(
-        favorites.includes(id)
-          ? favorites.filter((fid) => fid !== id)
-          : [...favorites, id]
-      )
-    );
+  /* -------- Favorites Toggle Callback -------- */
+  const handleToggleFavorite = (id, isFav) => {
+    setFavorites((prev) => {
+      if (isFav) {
+        return [...prev, id];
+      }
+      return prev.filter((item) => (typeof item === "string" ? item !== id : item?._id !== id));
+    });
   };
 
   /* -------- Render -------- */
   return (
     <div className="min-h-screen bg-background">
-      <TopNavigation currentUser={currentUser} />
-      <main className="container mx-auto px-4 py-8">
-        {/* Hero Banner */}
-        <section className="relative mb-16 h-[70vh] sm:h-[80vh] overflow-hidden rounded-xl shadow-2xl">
+      <TopNavigation />
+
+      <main className="container px-4 sm:px-6 py-6 sm:py-10 mx-auto">
+        {/* Hero Banner Section */}
+        <section className="relative mb-16 h-[55vh] sm:h-[65vh] max-h-[550px] min-h-[380px] overflow-hidden rounded-2xl sm:rounded-3xl shadow-warm-lg">
           {images.map((img, i) => (
-            <AnimatePresence key={i}>
+            <AnimatePresence key={img}>
               {i === current && (
                 <motion.img
-                  key={i}
+                  key={img}
                   src={img}
-                  alt={`Slide ${i}`}
-                  initial={{ opacity: 0, scale: 1.1 }}
+                  alt="YammiVerse Hero"
+                  initial={{ opacity: 0, scale: 1.08 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 1.2 }}
-                  className="absolute inset-0 h-full w-full object-cover"
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ duration: 1 }}
+                  className="absolute inset-0 object-cover w-full h-full"
                 />
               )}
             </AnimatePresence>
           ))}
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent" />
-          {/* Text */}
-          <div className="relative z-10 flex h-full flex-col items-center justify-center text-center text-white px-4">
-            <motion.h1
-              initial={{ y: 40, opacity: 0 }}
+
+          {/* Dark Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/50 to-black/25" />
+
+          {/* Hero Content */}
+          <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 text-center text-white">
+            <motion.span
+              initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.8 }}
-              className="max-w-3xl text-4xl font-extrabold sm:text-6xl drop-shadow-lg"
+              transition={{ duration: 0.5 }}
+              className="px-3.5 py-1 mb-3 rounded-full text-xs sm:text-sm font-semibold bg-white/20 backdrop-blur-md border border-white/30 tracking-wide uppercase"
+            >
+              Culinary Community
+            </motion.span>
+
+            <motion.h1
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.7 }}
+              className="max-w-3xl text-3xl sm:text-5xl md:text-6xl font-heading font-extrabold tracking-tight drop-shadow-md"
             >
               Discover. Cook. Share. 🍲
             </motion.h1>
+
             <motion.p
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="mt-4 max-w-2xl text-base sm:text-lg text-gray-200"
+              transition={{ delay: 0.2, duration: 0.7 }}
+              className="max-w-2xl mt-3 sm:mt-4 text-sm sm:text-lg text-gray-200 leading-relaxed font-normal"
             >
-              Explore recipes from around the world 🌎 and share your own with
-              foodies everywhere.
+              Explore handcrafted recipes from food lovers around the globe and share your own masterpieces with the world.
             </motion.p>
-            <div className="mt-6 flex gap-4">
+
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.7 }}
+              className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-6 sm:mt-8"
+            >
               <Link
                 to="/add-recipe"
-                className="rounded-lg bg-primary px-6 py-3 text-lg font-medium text-white hover:bg-primary/90 shadow-md"
+                className="px-6 py-3 text-sm sm:text-base font-semibold text-white rounded-xl shadow-lg bg-primary hover:bg-primary/90 transition-all hover:scale-102"
               >
-                Add Recipe
+                + Add Recipe
               </Link>
               <a
                 href="#recipes"
-                className="rounded-lg border border-white/40 px-6 py-3 text-lg text-white hover:bg-white/20"
+                className="px-6 py-3 text-sm sm:text-base font-semibold text-white border border-white/50 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-all"
               >
-                Browse
+                Browse Recipes
               </a>
-            </div>
+            </motion.div>
           </div>
-          {/* Controls */}
+
+          {/* Slider Arrow Controls */}
           <button
+            type="button"
+            aria-label="Previous Slide"
             onClick={() =>
               setCurrent((p) => (p - 1 + images.length) % images.length)
             }
-            className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
+            className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 p-2 sm:p-2.5 text-white rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-sm transition z-20"
           >
             ‹
           </button>
           <button
+            type="button"
+            aria-label="Next Slide"
             onClick={() => setCurrent((p) => (p + 1) % images.length)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
+            className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 p-2 sm:p-2.5 text-white rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-sm transition z-20"
           >
             ›
           </button>
-          {/* Dots */}
-          <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+
+          {/* Dots Indicator */}
+          <div className="absolute left-0 right-0 flex justify-center gap-2 bottom-4 sm:bottom-6 z-20">
             {images.map((_, i) => (
               <BannerDot
                 key={i}
@@ -291,25 +329,15 @@ const HomePage = () => {
         {/* Error Banner */}
         {error && <ErrorBanner message={error} onRetry={fetchData} />}
 
-        {/* Stats */}
+        {/* Quick Kitchen Stats */}
         <SectionTitle
           title="Your Kitchen at a Glance"
-          subtitle="Track your food journey"
+          subtitle="Track your culinary stats, favorites, and latest recipes"
         />
         <QuickStats {...stats} />
 
-        {/* Featured */}
-        <SectionTitle
-          title="Featured Recipes"
-          subtitle="Handpicked by our chefs"
-        />
-        {loading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <SkeletonBlock className="h-64" />
-            <SkeletonBlock className="h-64" />
-            <SkeletonBlock className="h-64" />
-          </div>
-        ) : (
+        {/* Featured Recipes Section */}
+        {featured.length > 0 && (
           <FeaturedRecipes
             featuredRecipes={featured}
             favorites={favorites}
@@ -317,46 +345,30 @@ const HomePage = () => {
           />
         )}
 
-        {/* Filters */}
-        <SectionTitle
-          title="Find Your Next Dish"
-          subtitle="Search by category, time & difficulty"
-        />
-        <SearchFilters
-          searchTerm={searchTerm}
-          filters={filters}
-          onSearchChange={setSearchTerm}
-          onFilterChange={setFilters}
-        />
+        {/* Recipe Search & Filters */}
+        <section id="recipes" className="pt-4 mb-8">
+          <SectionTitle
+            title="Explore Recipes"
+            subtitle="Search by dish name, meal category, cooking time, and difficulty"
+          />
+          <SearchFilters
+            searchTerm={searchTerm}
+            filters={filters}
+            onSearchChange={setSearchTerm}
+            onFilterChange={setFilters}
+          />
+        </section>
 
-        {/* Recipes */}
-        <section id="recipes" className="mt-8">
-          {loading ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <SkeletonBlock key={i} className="h-64" />
-              ))}
-            </div>
-          ) : (
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={{
-                hidden: { opacity: 0 },
-                visible: {
-                  opacity: 1,
-                  transition: { staggerChildren: 0.1 },
-                },
-              }}
-            >
-              <RecipeGrid
-                recipes={filteredRecipes}
-                favorites={favorites}
-                onToggleFavorite={handleToggleFavorite}
-                currentUser={currentUser}
-              />
-            </motion.div>
-          )}
+        {/* Recipe Grid */}
+        <section className="mb-16">
+          <RecipeGrid
+            recipes={filteredRecipes}
+            favorites={favorites}
+            onToggleFavorite={handleToggleFavorite}
+            currentUser={currentUser}
+            loading={loading}
+            error={error}
+          />
         </section>
       </main>
     </div>

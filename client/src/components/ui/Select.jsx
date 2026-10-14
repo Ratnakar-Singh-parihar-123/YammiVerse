@@ -9,7 +9,7 @@ const Select = React.forwardRef(({
     className,
     options = [],
     value,
-    defaultValue,
+    defaultValue: _defaultValue,
     placeholder = "Select an option",
     multiple = false,
     disabled = false,
